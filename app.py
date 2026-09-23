@@ -16,6 +16,12 @@ ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 BINANCE_PAY_ID = os.getenv("BINANCE_PAY_ID", "123456789")
 SMSBOWER_URL = "https://smsbower.online/stubs/handler_api.php"
 
+# MAXIMUM COST LIMIT FILTERS
+MAX_COST_LIMITS = {
+    "tg": 0.40,  # Telegram: Maximum $0.40
+    "wa": 0.25   # WhatsApp: Maximum $0.25
+}
+
 # ----------------- IN-MEMORY STORAGE -----------------
 users = {}          # {user_id: {name, username, balance, total_otp, is_banned}}
 services = {}       # {service_key: {service_name, service_code, country_id, country_name, flag, custom_price, max_price}}
@@ -23,22 +29,34 @@ active_orders = {}  # {user_id: {activation_id, phone, service_key, price, start
 deposits = {}       # {deposit_id: {user_id, amount, trx_id, photo_id, status}}
 traffic_log = []    # [{timestamp, service_name, country_name}]
 
-# Dynamic Country Name Fetcher
-country_names_cache = {}
+# Country Mapping (ID to Name & Flag)
+COUNTRY_MAP = {
+    "0": {"name": "Russia", "flag": "🇷🇺"},
+    "1": {"name": "Ukraine", "flag": "🇺🇦"},
+    "2": {"name": "Kazakhstan", "flag": "🇰🇿"},
+    "3": {"name": "China", "flag": "🇨🇳"},
+    "4": {"name": "Philippines", "flag": "🇵🇭"},
+    "5": {"name": "Myanmar", "flag": "🇲🇲"},
+    "6": {"name": "Indonesia", "flag": "🇮🇩"},
+    "7": {"name": "Malaysia", "flag": "🇲🇾"},
+    "8": {"name": "Kenya", "flag": "🇰🇪"},
+    "9": {"name": "Vietnam", "flag": "🇻🇳"},
+    "10": {"name": "Kyrgyzstan", "flag": "🇰🇬"},
+    "12": {"name": "USA", "flag": "🇺🇸"},
+    "187": {"name": "USA Virtual", "flag": "🇺🇸"},
+    "13": {"name": "Israel", "flag": "🇮🇱"},
+    "14": {"name": "Hong Kong", "flag": "🇭🇰"},
+    "15": {"name": "Poland", "flag": "🇵🇱"},
+    "16": {"name": "England", "flag": "🇬🇧"},
+    "22": {"name": "India", "flag": "🇮🇳"},
+    "73": {"name": "Brazil", "flag": "🇧🇷"}
+}
 
 def get_country_info(cid):
-    if not country_names_cache:
-        try:
-            res = requests.get(SMSBOWER_URL, params={"action": "getCountries"}, timeout=5).json()
-            for key, val in res.items():
-                c_id = str(val.get("id", key))
-                c_name = val.get("eng", val.get("name", f"Country {c_id}"))
-                country_names_cache[c_id] = c_name
-        except Exception:
-            pass
-            
-    c_name = country_names_cache.get(str(cid), f"Country {cid}")
-    return {"name": c_name, "flag": "🌐"}
+    cid_str = str(cid)
+    if cid_str in COUNTRY_MAP:
+        return COUNTRY_MAP[cid_str]
+    return {"name": "Country " + cid_str, "flag": "🌐"}
 
 # ----------------- KEYBOARDS -----------------
 
@@ -163,7 +181,6 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ Bortomane kono service add kora nei.")
             return
 
-        # Sort services by custom_price lowest first
         sorted_services = sorted(services.items(), key=lambda x: x[1]['custom_price'])
 
         keyboard = []
@@ -171,10 +188,9 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             btn_text = "{} {} - {} (${:.2f})".format(s_data['flag'], s_data['country_name'], s_data['service_name'], s_data['custom_price'])
             keyboard.append([InlineKeyboardButton(btn_text, callback_data="buynum_" + str(key))])
 
-        # Back button at bottom
         keyboard.append([InlineKeyboardButton("🔙 Back to Main Menu", callback_data="nav_back_main")])
 
-        await update.message.reply_text("🛒 **Kom damer kromanusare service select korun (120+ All Countries):**", reply_markup=InlineKeyboardMarkup(keyboard))
+        await update.message.reply_text("🛒 **Service list (Filtered & Sorted by Price):**", reply_markup=InlineKeyboardMarkup(keyboard))
 
 # ----------------- ADD SERVICE -----------------
 
@@ -183,7 +199,7 @@ async def admin_add_service_menu(update: Update, context: ContextTypes.DEFAULT_T
         return
 
     keyboard = [
-        [InlineKeyboardButton("✈️ Telegram", callback_data="addcat_tg"), InlineKeyboardButton("💬 WhatsApp", callback_data="addcat_wa")],
+        [InlineKeyboardButton("✈️ Telegram (< $0.40)", callback_data="addcat_tg"), InlineKeyboardButton("💬 WhatsApp (< $0.25)", callback_data="addcat_wa")],
         [InlineKeyboardButton("🔙 Back to Admin Panel", callback_data="nav_back_admin")]
     ]
     await update.message.reply_text("📂 **Kon category-r service add korte chan select korun:**", reply_markup=InlineKeyboardMarkup(keyboard))
@@ -205,6 +221,7 @@ async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_T
     if data.startswith("addcat_"):
         code = data.replace("addcat_", "")
         service_name = "Telegram" if code == "tg" else "WhatsApp"
+        max_limit = MAX_COST_LIMITS.get(code, 1.0)
 
         params = {"api_key": SMSBOWER_API_KEY, "action": "getPrices", "service": code}
         
@@ -212,27 +229,27 @@ async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_T
             res = requests.get(SMSBOWER_URL, params=params, timeout=10).json()
             country_list = []
 
-            # Fetch ALL 120+ countries dynamically from API response
             for cid, cdata in res.items():
                 if code in cdata:
                     cost = float(cdata[code].get("cost", 0))
                     count = int(cdata[code].get("count", 0))
                     
-                    cinfo = get_country_info(cid)
-
-                    country_list.append({
-                        "cid": cid,
-                        "name": cinfo['name'],
-                        "flag": cinfo['flag'],
-                        "cost": cost,
-                        "count": count
-                    })
+                    # Apply specific rate filter rule
+                    if cost <= max_limit and count > 0:
+                        cinfo = get_country_info(cid)
+                        country_list.append({
+                            "cid": cid,
+                            "name": cinfo['name'],
+                            "flag": cinfo['flag'],
+                            "cost": cost,
+                            "count": count
+                        })
 
             # Sort by lowest price first
             country_list = sorted(country_list, key=lambda x: x['cost'])
 
             keyboard = []
-            for item in country_list[:120]:  # Up to 120+ items dynamically
+            for item in country_list:
                 s_key = "{}_{}".format(code, item['cid'])
                 status = "✅ Added" if s_key in services else "➕ Add"
                 
@@ -242,14 +259,13 @@ async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_T
                 cb_data = "save_s_{}_{}".format(s_key, item['cost'])
                 keyboard.append([InlineKeyboardButton(btn_text, callback_data=cb_data)])
 
-            # Back button at bottom
             keyboard.append([InlineKeyboardButton("🔙 Back to Categories", callback_data="nav_back_addcat")])
 
             if not keyboard:
-                await query.edit_message_text("❌ Kono country/stock pawa jayni.")
+                await query.edit_message_text("❌ ${} er niche kono desh/stock pawa jayni.".format(max_limit))
                 return
 
-            await query.edit_message_text("🌐 **{} er Shobcheye Kom Rate-er 120+ Country List (Lowest Price First):**".format(service_name), reply_markup=InlineKeyboardMarkup(keyboard))
+            await query.edit_message_text("🌐 **{} (${} er kom rate-er desh shob Flag soho):**".format(service_name, max_limit), reply_markup=InlineKeyboardMarkup(keyboard))
 
         except Exception as err:
             await query.edit_message_text("❌ API data fetch error: " + str(err))
@@ -312,7 +328,6 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("❌ Service pawa jayni.")
             return
 
-        # Max Price Limit Check
         try:
             p_res = requests.get(SMSBOWER_URL, params={"api_key": SMSBOWER_API_KEY, "action": "getPrices", "service": s_data['service_code'], "country": s_data['country_id']}, timeout=5).json()
             current_api_cost = float(p_res.get(s_data['country_id'], {}).get(s_data['service_code'], {}).get("cost", 999))

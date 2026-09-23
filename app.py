@@ -23,13 +23,13 @@ MAX_COST_LIMITS = {
 }
 
 # ----------------- IN-MEMORY STORAGE -----------------
-users = {}          # {user_id: {name, username, balance, total_otp, is_banned}}
+users = {}          # {user_id: {name, username, balance, total_otp, rank, is_banned}}
 services = {}       # {service_key: {service_name, service_code, country_id, country_name, flag, custom_price, max_price}}
 active_orders = {}  # {user_id: {activation_id, phone, service_key, price, start_time}}
 deposits = {}       # {deposit_id: {user_id, amount, trx_id, photo_id, status}}
 traffic_log = []    # [{timestamp, service_name, country_name}]
 
-# Country Mapping (ID to Name & Flag)
+# Expanded Country Mapping (ID to Name & Flag based on screenshots & API)
 COUNTRY_MAP = {
     "0": {"name": "Russia", "flag": "🇷🇺"},
     "1": {"name": "Ukraine", "flag": "🇺🇦"},
@@ -49,7 +49,44 @@ COUNTRY_MAP = {
     "15": {"name": "Poland", "flag": "🇵🇱"},
     "16": {"name": "England", "flag": "🇬🇧"},
     "22": {"name": "India", "flag": "🇮🇳"},
-    "73": {"name": "Brazil", "flag": "🇧🇷"}
+    "73": {"name": "Brazil", "flag": "🇧🇷"},
+    "11": {"name": "Colombia", "flag": "🇨🇴"},
+    "32": {"name": "Romania", "flag": "🇷🇴"},
+    "33": {"name": "Colombia", "flag": "🇨🇴"},
+    "34": {"name": "Estonia", "flag": "🇪🇪"},
+    "36": {"name": "Canada", "flag": "🇨🇦"},
+    "43": {"name": "Germany", "flag": "🇩🇪"},
+    "52": {"name": "Thailand", "flag": "🇹🇭"},
+    "60": {"name": "South Africa", "flag": "🇿🇦"},
+    "68": {"name": "Pakistan", "flag": "🇵🇰"},
+    "77": {"name": "Mexico", "flag": "🇲🇽"},
+    "80": {"name": "France", "flag": "🇫🇷"},
+    "86": {"name": "Italy", "flag": "🇮🇹"},
+    "87": {"name": "Spain", "flag": "🇪🇸"},
+    "101": {"name": "Morocco", "flag": "🇲🇦"},
+    "117": {"name": "Portugal", "flag": "🇵🇹"},
+    "128": {"name": "Georgia", "flag": "🇬🇪"},
+    "148": {"name": "Armenia", "flag": "🇦🇲"},
+    "151": {"name": "Chile", "flag": "🇨🇱"},
+    "155": {"name": "Czech Republic", "flag": "🇨🇿"},
+    "161": {"name": "Uzbekistan", "flag": "🇺🇿"},
+    "165": {"name": "Saudi Arabia", "flag": "🇸🇦"},
+    "173": {"name": "Tunisia", "flag": "🇹🇳"},
+    "174": {"name": "Moldova", "flag": "🇲🇩"},
+    "175": {"name": "Kuwait", "flag": "🇰🇼"},
+    "176": {"name": "Slovenia", "flag": "🇸🇮"},
+    "177": {"name": "Denmark", "flag": "🇩🇰"},
+    "178": {"name": "Austria", "flag": "🇦🇹"},
+    "179": {"name": "Afghanistan", "flag": "🇦🇫"},
+    "180": {"name": "Chad", "flag": "🇹🇩"},
+    "181": {"name": "Finland", "flag": "🇫🇮"},
+    "182": {"name": "Lebanon", "flag": "🇱🇧"},
+    "183": {"name": "Jamaica", "flag": "🇯🇲"},
+    "184": {"name": "New Zealand", "flag": "🇳🇿"},
+    "185": {"name": "Iraq", "flag": "🇮🇶"},
+    "186": {"name": "Iran", "flag": "🇮🇷"},
+    "188": {"name": "Cameroon", "flag": "🇨🇲"},
+    "189": {"name": "Nigeria", "flag": "🇳🇬"}
 }
 
 def get_country_info(cid):
@@ -57,6 +94,18 @@ def get_country_info(cid):
     if cid_str in COUNTRY_MAP:
         return COUNTRY_MAP[cid_str]
     return {"name": "Country " + cid_str, "flag": "🌐"}
+
+# ----------------- RANK & DISCOUNT SYSTEM -----------------
+
+def get_discounted_price(base_price: float, rank: str) -> float:
+    discounts = {
+        "Normal": 0.0,    # 0% Discount
+        "Bronze": 0.02,   # 2% Discount
+        "Silver": 0.05,   # 5% Discount
+        "Gold": 0.10      # 10% Discount
+    }
+    discount = discounts.get(rank, 0.0)
+    return round(base_price * (1 - discount), 3)
 
 # ----------------- KEYBOARDS -----------------
 
@@ -85,6 +134,7 @@ def get_user_data(user_id, name, username):
             "username": username or "N/A",
             "balance": 0.0,
             "total_otp": 0,
+            "rank": "Normal",
             "is_banned": False
         }
     return users[user_id]
@@ -103,7 +153,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     is_admin = (user_id == ADMIN_ID)
-    msg = "👋 **Hello {}!**\n\nSwagotom amader service bote.".format(name)
+    msg = f"👋 **Hello {name}!**\n\nSwagotom amader service bote.\n\n🏆 Apnar Rank: **{user['rank']}**"
     await update.message.reply_text(msg, reply_markup=get_main_keyboard(is_admin=is_admin), parse_mode="Markdown")
 
 # ----------------- USER MENU HANDLERS -----------------
@@ -132,12 +182,12 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             total_user_bal = sum(u["balance"] for u in users.values())
             msg = (
                 "💳 **Admin Account Balance & Info:**\n\n"
-                "🌐 **SMS Bower API Balance:** ${}\n"
-                "👥 **Total Bot Users:** {}\n"
-                "💰 **Total User Balances:** ${:.2f}"
-            ).format(sms_bal, len(users), total_user_bal)
+                f"🌐 **SMS Bower API Balance:** ${sms_bal}\n"
+                f"👥 **Total Bot Users:** {len(users)}\n"
+                f"💰 **Total User Balances:** ${total_user_bal:.2f}"
+            )
         else:
-            msg = "💳 **Apnar bortoman balance:** ${:.2f}".format(user['balance'])
+            msg = f"💳 **Apnar bortoman balance:** ${user['balance']:.2f}"
         
         await update.message.reply_text(msg, parse_mode="Markdown")
 
@@ -145,11 +195,12 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "👤 Profile":
         msg = (
             "👤 **User Profile**\n\n"
-            "🆔 ID: `{}`\n"
-            "👤 Name: {}\n"
-            "💰 Balance: **${:.2f}**\n"
-            "📩 Total OTP Received: **{}**"
-        ).format(user_id, user['name'], user['balance'], user['total_otp'])
+            f"🆔 ID: `{user_id}`\n"
+            f"👤 Name: {user['name']}\n"
+            f"🏆 Rank: **{user['rank']}**\n"
+            f"💰 Balance: **${user['balance']:.2f}**\n"
+            f"📩 Total OTP Received: **{user['total_otp']}**"
+        )
         await update.message.reply_text(msg, parse_mode="Markdown")
 
     # 3. ADMIN PANEL
@@ -170,10 +221,10 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ]
             msg = (
                 "📌 **Apnar ekti number active ache!**\n\n"
-                "🔹 Service: **{}**\n"
-                "{} Country: **{}**\n"
-                "📞 Number: `{}`"
-            ).format(order['service_name'], order['flag'], order['country_name'], order['phone'])
+                f"🔹 Service: **{order['service_name']}**\n"
+                f"{order['flag']} Country: **{order['country_name']}**\n"
+                f"📞 Number: `{order['phone']}`"
+            )
             await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
             return
 
@@ -181,16 +232,18 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ Bortomane kono service add kora nei.")
             return
 
-        sorted_services = sorted(services.items(), key=lambda x: x[1]['custom_price'])
+        # Rank-based calculated pricing
+        sorted_services = sorted(services.items(), key=lambda x: get_discounted_price(x[1]['custom_price'], user['rank']))
 
         keyboard = []
         for key, s_data in sorted_services:
-            btn_text = "{} {} - {} (${:.2f})".format(s_data['flag'], s_data['country_name'], s_data['service_name'], s_data['custom_price'])
+            final_price = get_discounted_price(s_data['custom_price'], user['rank'])
+            btn_text = f"{s_data['flag']} {s_data['country_name']} - {s_data['service_name']} (${final_price:.3f})"
             keyboard.append([InlineKeyboardButton(btn_text, callback_data="buynum_" + str(key))])
 
         keyboard.append([InlineKeyboardButton("🔙 Back to Main Menu", callback_data="nav_back_main")])
 
-        await update.message.reply_text("🛒 **Service list (Filtered & Sorted by Price):**", reply_markup=InlineKeyboardMarkup(keyboard))
+        await update.message.reply_text(f"🛒 **Service list (Filtered & Price for Rank: {user['rank']}):**", reply_markup=InlineKeyboardMarkup(keyboard))
 
 # ----------------- ADD SERVICE -----------------
 
@@ -234,7 +287,7 @@ async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_T
                     cost = float(cdata[code].get("cost", 0))
                     count = int(cdata[code].get("count", 0))
                     
-                    # Apply specific rate filter rule
+                    # Apply specific rate filter rule (< $0.40 for TG and < $0.25 for WA)
                     if cost <= max_limit and count > 0:
                         cinfo = get_country_info(cid)
                         country_list.append({
@@ -250,22 +303,20 @@ async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_T
 
             keyboard = []
             for item in country_list:
-                s_key = "{}_{}".format(code, item['cid'])
+                s_key = f"{code}_{item['cid']}"
                 status = "✅ Added" if s_key in services else "➕ Add"
                 
-                btn_text = "{} {} - {} (${}) [Stock: {}] [{}]".format(
-                    item['flag'], item['name'], service_name, item['cost'], item['count'], status
-                )
-                cb_data = "save_s_{}_{}".format(s_key, item['cost'])
+                btn_text = f"{item['flag']} {item['name']} - {service_name} (${item['cost']}) [Stock: {item['count']}] [{status}]"
+                cb_data = f"save_s_{s_key}_{item['cost']}"
                 keyboard.append([InlineKeyboardButton(btn_text, callback_data=cb_data)])
 
             keyboard.append([InlineKeyboardButton("🔙 Back to Categories", callback_data="nav_back_addcat")])
 
             if not keyboard:
-                await query.edit_message_text("❌ ${} er niche kono desh/stock pawa jayni.".format(max_limit))
+                await query.edit_message_text(f"❌ ${max_limit} er niche kono desh/stock pawa jayni.")
                 return
 
-            await query.edit_message_text("🌐 **{} (${} er kom rate-er desh shob Flag soho):**".format(service_name, max_limit), reply_markup=InlineKeyboardMarkup(keyboard))
+            await query.edit_message_text(f"🌐 **{service_name} (${max_limit} er kom rate-er desh shob Flag soho):**", reply_markup=InlineKeyboardMarkup(keyboard))
 
         except Exception as err:
             await query.edit_message_text("❌ API data fetch error: " + str(err))
@@ -284,12 +335,12 @@ async def handle_save_service(update: Update, context: ContextTypes.DEFAULT_TYPE
         cid = parts[3]
         cost = float(parts[4])
 
-        s_key = "{}_{}".format(code, cid)
+        s_key = f"{code}_{cid}"
         cinfo = get_country_info(cid)
         service_name = "Telegram" if code == "tg" else "WhatsApp"
 
-        selling_price = cost + 0.10
-        max_limit = cost + 0.50
+        selling_price = cost + 0.05
+        max_limit = MAX_COST_LIMITS.get(code, cost + 0.20)
 
         services[s_key] = {
             "service_name": service_name,
@@ -303,9 +354,9 @@ async def handle_save_service(update: Update, context: ContextTypes.DEFAULT_TYPE
         }
 
         msg = (
-            "✅ **{} {} - {}** Add kora hoyeche!\n"
-            "💵 Cost: ${:.2f} | Selling Price: ${:.2f} \vert{} Max Limit:${:.2f}"
-        ).format(cinfo['flag'], cinfo['name'], service_name, cost, selling_price, max_limit)
+            f"✅ **{cinfo['flag']} {cinfo['name']} - {service_name}** Add kora hoyeche!\n"
+            f"💵 Cost: ${cost:.3f} | Base Selling Price: ${selling_price:.3f} \vert{} Max Limit:${max_limit:.3f}"
+        )
 
         keyboard = [[InlineKeyboardButton("🔙 Back to Country List", callback_data="addcat_" + code)]]
         await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
@@ -328,20 +379,27 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("❌ Service pawa jayni.")
             return
 
+        # Realtime Auto Price Check & Update from SMSBower API
         try:
             p_res = requests.get(SMSBOWER_URL, params={"api_key": SMSBOWER_API_KEY, "action": "getPrices", "service": s_data['service_code'], "country": s_data['country_id']}, timeout=5).json()
             current_api_cost = float(p_res.get(s_data['country_id'], {}).get(s_data['service_code'], {}).get("cost", 999))
             
+            # Update dynamic cost price if API updated
+            s_data['cost_price'] = current_api_cost
+            s_data['custom_price'] = current_api_cost + 0.05
+
             if current_api_cost > s_data['max_price']:
-                msg_limit = "⚠️ **Dam besi hobar karone block kora hoyeche!**\nAPI Cost: ${:.2f}, Max Allowed:${:.2f}".format(current_api_cost, s_data['max_price'])
+                msg_limit = f"⚠️ **Dam besi hobar karone block kora hoyeche!**\nAPI Cost: ${current_api_cost:.3f}, Max Allowed:${s_data['max_price']:.3f}"
                 await query.edit_message_text(msg_limit, parse_mode="Markdown")
                 return
         except Exception:
             pass
 
-        price = s_data['custom_price']
+        # Discount Applied based on Rank
+        price = get_discounted_price(s_data['custom_price'], user['rank'])
+
         if user['balance'] < price:
-            msg_bal = "❌ Porjapto balance nei! Proyojon: ${:.2f}, ache:${:.2f}".format(price, user['balance'])
+            msg_bal = f"❌ Porjapto balance nei! Proyojon: ${price:.3f}, ache:${user['balance']:.2f}"
             await query.edit_message_text(msg_bal)
             return
 
@@ -377,12 +435,12 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ]
 
                 msg = (
-                    "🏷 **Service:** {}\n"
-                    "{} **Country:** {}\n"
-                    "📞 **Number:** `{}`\n"
-                    "💵 **Rate:** ${:.2f}\n\n"
-                    "⚠️ OTP na asha porjonto opekkha korun..."
-                ).format(s_data['service_name'], s_data['flag'], s_data['country_name'], phone, price)
+                    f"🏷 **Service:** {s_data['service_name']}\n"
+                    f"{s_data['flag']} **Country:** {s_data['country_name']}\n"
+                    f"📞 **Number:** `{phone}`\n"
+                    f"💵 **Rate ({user['rank']}):** ${price:.3f}\n\n"
+                    f"⚠️ OTP na asha porjonto opekkha korun..."
+                )
                 await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
             else:
                 msg_err = "❌ Number pawa jayni (Stock Empty)। API: " + str(res)
@@ -405,10 +463,10 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             msg = (
                 "🎉 **OTP Received!**\n\n"
-                "🏷 Service: {}\n"
-                "📞 Number: `{}`\n"
-                "💬 **OTP:** `{}`"
-            ).format(order['service_name'], order['phone'], otp_code)
+                f"🏷 Service: {order['service_name']}\n"
+                f"📞 Number: `{order['phone']}`\n"
+                f"💬 **OTP:** `{otp_code}`"
+            )
             del active_orders[user_id]
             await query.edit_message_text(msg, parse_mode="Markdown")
         elif "STATUS_WAIT_CODE" in res:
@@ -440,5 +498,5 @@ if __name__ == "__main__":
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|💳 Deposit|⚙️ Admin Panel|🔙 Main Menu)$"), handle_user_menu))
     app.add_handler(MessageHandler(filters.Regex("^➕ Add Service$"), admin_add_service_menu))
 
-    print("🤖 Bot is starting cleanly...")
+    print("🤖 Bot is starting cleanly with dynamic prices & rank system...")
     app.run_polling(drop_pending_updates=True)

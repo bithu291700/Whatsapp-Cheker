@@ -25,8 +25,6 @@ traffic_log = []    # [{timestamp, service_name, country_name}]
 
 # States for Conversations
 DEP_AMT, DEP_TRX, DEP_SS = range(3)
-BROADCAST_STATE = 10
-MAX_PRICE_STATE = 11
 
 # Country Mapping (ID to Name & Flag)
 COUNTRY_MAP = {
@@ -111,10 +109,9 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user["is_banned"]:
         return
 
-    # 1. ACCOUNT BALANCE (Admin view SMS Bower Balance + Bot Stats)
+    # 1. ACCOUNT BALANCE
     if text == "💳 Account Balance":
         if user_id == ADMIN_ID:
-            # Fetch SMS Bower API Balance
             sms_bal = "N/A"
             try:
                 res = requests.get(SMSBOWER_URL, params={"api_key": SMSBOWER_API_KEY, "action": "getBalance"}, timeout=5).text
@@ -182,7 +179,7 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text("🛒 **একটি সার্ভিস সিলেক্ট করুন:**", reply_markup=InlineKeyboardMarkup(keyboard))
 
-# ----------------- ADD SERVICE (TELEGRAM / WHATSAPP WITH STOCK & MAX PRICE) -----------------
+# ----------------- ADD SERVICE (TELEGRAM / WHATSAPP) -----------------
 
 async def admin_add_service_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
@@ -199,17 +196,13 @@ async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_T
     data = query.data
 
     if data.startswith("addcat_"):
-        code = data.replace("addcat_", "") # 'tg' or 'wa'
+        code = data.replace("addcat_", "")
         service_name = "Telegram" if code == "tg" else "WhatsApp"
 
-        # Fetch prices and stock from SMS Bower API
-        # action=getPrices&service=tg/wa
         params = {"api_key": SMSBOWER_API_KEY, "action": "getPrices", "service": code}
         
         try:
             res = requests.get(SMSBOWER_URL, params=params, timeout=10).json()
-            # Response: {country_id: {service_code: {cost: "0.20", count: 15}}}
-            
             keyboard = []
             for cid, cinfo in COUNTRY_MAP.items():
                 if cid in res and code in res[cid]:
@@ -246,7 +239,6 @@ async def handle_save_service(update: Update, context: ContextTypes.DEFAULT_TYPE
         cinfo = COUNTRY_MAP.get(cid, {"name": "Unknown", "flag": "🏳️"})
         service_name = "Telegram" if code == "tg" else "WhatsApp"
 
-        # Default max_price is 1.5x cost
         services[s_key] = {
             "service_name": service_name,
             "service_code": code,
@@ -254,8 +246,8 @@ async def handle_save_service(update: Update, context: ContextTypes.DEFAULT_TYPE
             "country_name": cinfo['name'],
             "flag": cinfo['flag'],
             "cost_price": cost,
-            "custom_price": cost + 0.10, # default profit
-            "max_price": cost + 0.50     # safety max limit
+            "custom_price": cost + 0.10,
+            "max_price": cost + 0.50
         }
 
         await query.edit_message_text(
@@ -282,7 +274,6 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         # Check Max Price Safety Filter
-        # Fetch current live price first
         try:
             p_res = requests.get(SMSBOWER_URL, params={"api_key": SMSBOWER_API_KEY, "action": "getPrices", "service": s_data['service_code'], "country": s_data['country_id']}, timeout=5).json()
             current_api_cost = float(p_res.get(s_data['country_id'], {}).get(s_data['service_code'], {}).get("cost", 999))
@@ -298,7 +289,6 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text(f"❌ আপনার পর্যাপ্ত ব্যালেন্স নেই! প্রয়োজন: ${price:.2f}, আপনার আছে: ${user['balance']:.2f}")
             return
 
-        # Buy Number Request
         params = {
             "api_key": SMSBOWER_API_KEY,
             "action": "getNumber",
@@ -392,5 +382,5 @@ if __name__ == "__main__":
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|🌐 Set Country|🛠 Set Service|👤 Profile|💳 Deposit|⚙️ Admin Panel|🔙 Main Menu)$"), handle_user_menu))
     app.add_handler(MessageHandler(filters.Regex("^➕ Add Service$"), admin_add_service_menu))
 
-    print("🤖 Bot is running with all Admin Panel features...")
+    print("🤖 Bot is running smoothly without syntax errors...")
     app.run_polling(drop_pending_updates=True)

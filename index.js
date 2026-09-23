@@ -2,7 +2,6 @@ const {
     default: makeWASocket, 
     useMultiFileAuthState, 
     DisconnectReason, 
-    fetchLatestBaileysVersion, 
     Browsers,
     makeCacheableSignalKeyStore
 } = require('@whiskeysockets/baileys');
@@ -29,11 +28,7 @@ app.listen(PORT, '0.0.0.0', () => console.log(`Server listening on port ${PORT}`
 
 const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
 
-bot.on('polling_error', (err) => {
-    if (err.message.includes('409 Conflict')) {
-        console.log('Multiple polling handled.');
-    }
-});
+bot.on('polling_error', (err) => {});
 
 process.on('uncaughtException', (err) => console.error('Uncaught Exception:', err));
 process.on('unhandledRejection', (reason) => console.error('Unhandled Rejection:', reason));
@@ -76,26 +71,19 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
 
     ensureDirExists(sessionDir);
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-    
-    let version = [2, 3000, 1015901307];
-    try {
-        const fetchRes = await fetchLatestBaileysVersion();
-        version = fetchRes.version;
-    } catch (e) {}
 
     const waSock = makeWASocket({
-        version,
+        version: [2, 3000, 1015901307],
         logger: pino({ level: 'fatal' }),
         printQRInTerminal: false,
-        browser: Browsers.macOS('Desktop'),
+        browser: ["Ubuntu", "Chrome", "20.0.04"],
         auth: {
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }))
         },
         markOnlineOnConnect: true,
-        connectTimeoutMs: 120000,
-        defaultQueryTimeoutMs: 0,
-        keepAliveIntervalMs: 30000
+        connectTimeoutMs: 60000,
+        keepAliveIntervalMs: 25000
     });
 
     waSock.ev.on('creds.update', saveCreds);
@@ -108,18 +96,22 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
         if (qr && phoneToPair && !codeRequested && !waSock.authState.creds.registered) {
             codeRequested = true;
             try {
-                // Short wait to ensure socket handshaking is live
-                await new Promise((res) => setTimeout(res, 2000));
+                await new Promise(r => setTimeout(r, 1500));
                 let code = await waSock.requestPairingCode(phoneToPair);
                 code = code?.match(/.{1,4}/g)?.join("-") || code;
 
-                bot.sendMessage(chatId, `🔑 **Pairing Code:** \`${code}\`\n\n👉 Apnar Phone-er **WhatsApp > Linked Devices > Link with Phone Number Instead**-e giye code-ti fast bosiye din!`, {
+                // Send Pairing Code with Cancel Inline Button
+                bot.sendMessage(chatId, `🔑 **Pairing Code:** \`${code}\`\n\n👉 Apnar WhatsApp-er **Linked Devices > Link with Phone Number Instead**-e giye code bosiye din!`, {
                     parse_mode: "Markdown",
-                    reply_markup: getMainReplyKeyboard()
+                    reply_markup: {
+                        inline_keyboard: [
+                            [{ text: "❌ Cancel Pairing", callback_data: "cancel_pairing" }]
+                        ]
+                    }
                 });
             } catch (err) {
                 console.error("Pairing Request Error:", err);
-                bot.sendMessage(chatId, "❌ Pairing Fail! Country code সহ exact number diyen.", { reply_markup: getMainReplyKeyboard() });
+                bot.sendMessage(chatId, "❌ Pairing Fail! Phone number-e country code (e.g. 88017...) soho diyen.", { reply_markup: getMainReplyKeyboard() });
             }
         }
 
@@ -144,6 +136,38 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
     userSockets[chatId] = waSock;
     return waSock;
 }
+
+// Inline Keyboard Button Callback (Cancel Action)
+bot.on('callback_query', async (query) => {
+    const chatId = query.message.chat.id;
+    const data = query.data;
+
+    if (data === "cancel_pairing") {
+        delete userStates[chatId];
+
+        // Close and cleanup WhatsApp connection instance
+        if (userSockets[chatId]) {
+            try {
+                userSockets[chatId].end(undefined);
+            } catch (e) {}
+            delete userSockets[chatId];
+        }
+
+        const sessionDir = path.join(__dirname, 'sessions', `session_${chatId}`);
+        if (fs.existsSync(sessionDir)) {
+            try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch (e) {}
+        }
+
+        await bot.answerCallbackQuery(query.id, { text: "Pairing Cancelled!" });
+        await bot.editMessageText("🚫 **Pairing attempt cancelled by user.**", {
+            chat_id: chatId,
+            message_id: query.message.message_id,
+            parse_mode: "Markdown"
+        });
+
+        bot.sendMessage(chatId, "Main menu-te firiye neya holo:", { reply_markup: getMainReplyKeyboard() });
+    }
+});
 
 // Commands Trigger
 bot.onText(/\/(start|strat|help)/i, (msg) => {
@@ -178,7 +202,7 @@ bot.on('message', async (msg) => {
 
     if (text === "🔢 Pair via Code") {
         userStates[chatId] = "WAITING_FOR_LINK_NUMBER";
-        return bot.sendMessage(chatId, "📲 WhatsApp Number (Country code সহ, e.g. `8801700000000`):", { parse_mode: "Markdown" });
+        return bot.sendMessage(chatId, "📲 WhatsApp Number (Country Code সহ, e.g. `8801700000000`):", { parse_mode: "Markdown" });
     } 
     
     if (text === "📱 Check Number") {

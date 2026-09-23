@@ -1,4 +1,4 @@
-         const { 
+const { 
     default: makeWASocket, 
     useMultiFileAuthState, 
     DisconnectReason, 
@@ -20,7 +20,6 @@ if (!TELEGRAM_TOKEN) {
     process.exit(1);
 }
 
-// Web Server for Railway
 const app = express();
 const PORT = process.env.PORT || 8080;
 app.get('/', (req, res) => res.status(200).send('WhatsApp Bot Active!'));
@@ -29,7 +28,6 @@ app.listen(PORT, '0.0.0.0', () => console.log(`Server listening on port ${PORT}`
 const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: true });
 
 bot.on('polling_error', (err) => {});
-
 process.on('uncaughtException', (err) => console.error('Uncaught Exception:', err));
 process.on('unhandledRejection', (reason) => console.error('Unhandled Rejection:', reason));
 
@@ -75,17 +73,17 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
     const waSock = makeWASocket({
         logger: pino({ level: 'fatal' }),
         printQRInTerminal: false,
-        // Official macOS Browser Signature fixes 'Logging in...' hang
-        browser: Browsers.macOS('Desktop'),
+        // Standard official browser signature to avoid device link rejection
+        browser: Browsers.ubuntu('Chrome'),
         auth: {
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }))
         },
-        markOnlineOnConnect: true,
-        generateHighQualityLinkPreview: false,
-        syncFullHistory: false, // Prevents login timeout while syncing chat history
+        markOnlineOnConnect: false,
+        syncFullHistory: false,
         connectTimeoutMs: 60000,
-        keepAliveIntervalMs: 25000
+        defaultQueryTimeoutMs: undefined,
+        keepAliveIntervalMs: 30000
     });
 
     waSock.ev.on('creds.update', saveCreds);
@@ -93,18 +91,19 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
     let codeRequested = false;
 
     waSock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, qr } = update;
+        const { connection, lastDisconnect } = update;
 
         if (phoneToPair && !codeRequested && !waSock.authState.creds.registered) {
             codeRequested = true;
             try {
-                await new Promise(r => setTimeout(r, 2000));
+                // Wait for socket handshake stabilization
+                await new Promise(r => setTimeout(r, 4000));
                 
                 const cleanPhone = phoneToPair.toString().replace(/[^0-9]/g, '');
                 let code = await waSock.requestPairingCode(cleanPhone);
                 code = code?.match(/.{1,4}/g)?.join("-") || code;
 
-                bot.sendMessage(chatId, `🔑 **Pairing Code:** \`${code}\`\n\n👉 Apnar WhatsApp-er **Linked Devices > Link with Phone Number Instead**-e giye code bosiye din!`, {
+                bot.sendMessage(chatId, `🔑 **Pairing Code:** \`${code}\`\n\n👉 Apnar WhatsApp-er **Linked Devices > Link with Phone Number Instead**-e giye ekhon code-ti bosiye din!`, {
                     parse_mode: "Markdown",
                     reply_markup: {
                         inline_keyboard: [
@@ -114,7 +113,7 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
                 });
             } catch (err) {
                 console.error("Pairing Request Error:", err);
-                bot.sendMessage(chatId, "❌ Pairing Fail! Country code সহ valid number diyen.", { reply_markup: getMainReplyKeyboard() });
+                bot.sendMessage(chatId, "❌ Pairing Request Rejected! Kicchu khon por abar try koren.", { reply_markup: getMainReplyKeyboard() });
             }
         }
 
@@ -140,7 +139,6 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
     return waSock;
 }
 
-// Inline Keyboard Button Callback (Cancel Action)
 bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
     const data = query.data;
@@ -149,9 +147,7 @@ bot.on('callback_query', async (query) => {
         delete userStates[chatId];
 
         if (userSockets[chatId]) {
-            try {
-                userSockets[chatId].end(undefined);
-            } catch (e) {}
+            try { userSockets[chatId].end(undefined); } catch (e) {}
             delete userSockets[chatId];
         }
 
@@ -171,7 +167,6 @@ bot.on('callback_query', async (query) => {
     }
 });
 
-// Commands Trigger
 bot.onText(/\/(start|strat|help)/i, (msg) => {
     const chatId = msg.chat.id;
     if (msg.from.id === ADMIN_ID || authenticatedUsers.has(chatId)) {

@@ -72,33 +72,26 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
 
     const waSock = makeWASocket({
         logger: pino({ level: 'fatal' }),
-        printQRInTerminal: false,
-        // Standard official browser signature to avoid device link rejection
         browser: Browsers.ubuntu('Chrome'),
         auth: {
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }))
         },
         markOnlineOnConnect: false,
-        syncFullHistory: false,
-        connectTimeoutMs: 60000,
-        defaultQueryTimeoutMs: undefined,
-        keepAliveIntervalMs: 30000
+        syncFullHistory: false
     });
 
     waSock.ev.on('creds.update', saveCreds);
 
     let codeRequested = false;
 
+    // Correct Baileys Pairing Code Pattern: Trigger requestPairingCode on 'qr' event
     waSock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect } = update;
+        const { connection, lastDisconnect, qr } = update;
 
-        if (phoneToPair && !codeRequested && !waSock.authState.creds.registered) {
+        if (phoneToPair && qr && !codeRequested && !waSock.authState.creds.registered) {
             codeRequested = true;
             try {
-                // Wait for socket handshake stabilization
-                await new Promise(r => setTimeout(r, 4000));
-                
                 const cleanPhone = phoneToPair.toString().replace(/[^0-9]/g, '');
                 let code = await waSock.requestPairingCode(cleanPhone);
                 code = code?.match(/.{1,4}/g)?.join("-") || code;
@@ -113,7 +106,7 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
                 });
             } catch (err) {
                 console.error("Pairing Request Error:", err);
-                bot.sendMessage(chatId, "❌ Pairing Request Rejected! Kicchu khon por abar try koren.", { reply_markup: getMainReplyKeyboard() });
+                bot.sendMessage(chatId, "❌ Pairing Request Failed! Abar try koren.", { reply_markup: getMainReplyKeyboard() });
             }
         }
 

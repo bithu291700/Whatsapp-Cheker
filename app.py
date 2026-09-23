@@ -1,6 +1,7 @@
 import os
 import time
 import requests
+import asyncio
 from pymongo import MongoClient
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -8,18 +9,18 @@ from telegram.ext import (
     MessageHandler, ContextTypes, ConversationHandler, filters
 )
 
-# Railway Environment Variables
+# ----------------- ENVIRONMENT VARIABLES -----------------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 SMSBOWER_API_KEY = os.getenv("SMSBOWER_API_KEY")
 ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 OTP_GROUP_ID = os.getenv("OTP_GROUP_ID")
-MONGO_URI = os.getenv("MONGO_URI") # MongoDB Connection String
+MONGO_URI = os.getenv("MONGO_URI")
 
 SMSBOWER_URL = "https://smsbower.app/api"
 ADMIN_BKASH = "01858582881"
 SUB_PRICE_BDT = 30
 
-# MongoDB Database Setup
+# ----------------- DATABASE SETUP -----------------
 mongo_client = MongoClient(MONGO_URI)
 db = mongo_client["sms_bot_db"]
 
@@ -30,7 +31,6 @@ subs_col = db["subscriptions"]
 
 # States for Conversation Handlers
 SUB_TRX, SUB_SS = range(2)
-BROADCAST_MSG = range(2, 3)
 
 # ----------------- KEYBOARDS -----------------
 
@@ -60,7 +60,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     user_name = update.effective_user.first_name
 
-    # MongoDB User Setup
+    # Check & Register User
     user = users_col.find_one({"user_id": user_id})
     if not user:
         user = {
@@ -74,33 +74,33 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         users_col.insert_one(user)
 
     if user.get("is_banned", False):
-        await update.message.reply_text("❌ আপনাকে বোটে ব্যান করা হয়েছে। সাপোর্ট টিমের সাথে যোগাযোগ করুন।")
+        await update.message.reply_text("❌ আপনাকে বোটে ব্যান করা হয়েছে।")
         return
 
-    # Check if Admin
+    # Admin Panel Check
     if user_id == ADMIN_ID:
         await update.message.reply_text(
-            "👑 **অ্যাডমিন প্যানেলে স্বাগতম!**\n\nনিচের মেনু থেকে আপনার অ্যাকশন নির্বাচন করুন:",
+            "👑 **অ্যাডমিন প্যানেলে স্বাগতম!**",
             reply_markup=get_admin_keyboard(),
             parse_mode="Markdown"
         )
         return
 
-    # Check Subscription
+    # Subscription Check
     if not user.get("is_subscribed", False):
         msg = (
             f"👋 **হ্যালো {user_name}!**\n\n"
             f"⚠️ **বোটের সেবা ব্যবহার করতে আপনাকে সাবস্ক্রিপশন নিতে হবে।**\n\n"
             f"📌 **সাবস্ক্রিপশন ফি:** ৳{SUB_PRICE_BDT} BDT\n"
-            f"পেমেন্ট করতে নিচের **'💳 সাবস্ক্রিপশন কিনুন (৳৩০)'** বাটনে ক্লিক করুন।"
+            f"পেমেন্ট করতে নিচে **'💳 সাবস্ক্রিপশন কিনুন (৳৩০)'** বাটনে ক্লিক করুন।"
         )
         await update.message.reply_text(msg, reply_markup=get_main_keyboard(is_subscribed=False), parse_mode="Markdown")
     else:
         balance = user.get("balance", 0.0)
-        msg = f"👋 **স্বাগতম!**\n\n💳 আপনার বর্তমান ব্যালেন্স: **${balance:.2f}**\n\nনিচের মেনু থেকে সার্ভিস সিলেক্ট করুন:"
+        msg = f"👋 **স্বাগতম!**\n\n💳 আপনার বর্তমান ব্যালেন্স: **${balance:.2f}**"
         await update.message.reply_text(msg, reply_markup=get_main_keyboard(is_subscribed=True), parse_mode="Markdown")
 
-# ----------------- SUBSCRIPTION CONVERSATION -----------------
+# ----------------- SUBSCRIPTION FLOW -----------------
 
 async def start_subscription(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -130,7 +130,6 @@ async def get_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     trx_id = context.user_data.get("trx_id")
     photo_file_id = update.message.photo[-1].file_id
 
-    # Store Pending Subscription
     subs_col.insert_one({
         "user_id": user_id,
         "trx_id": trx_id,
@@ -138,9 +137,8 @@ async def get_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "status": "pending"
     })
 
-    await update.message.reply_text("⏳ আপনার সাবস্ক্রিপশন রিকোয়েস্ট অ্যাডমিনের কাছে পাঠানো হয়েছে। অনুমোদন মিললে নোটিফিকেশন পাবেন।")
+    await update.message.reply_text("⏳ আপনার সাবস্ক্রিপশন রিকোয়েস্ট অ্যাডমিনের কাছে পাঠানো হয়েছে।")
 
-    # Send Notification to Admin
     keyboard = [
         [
             InlineKeyboardButton("✅ Approve", callback_data=f"sub_app_{user_id}"),
@@ -158,7 +156,7 @@ async def get_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_photo(chat_id=ADMIN_ID, photo=photo_file_id, caption=admin_msg, reply_markup=reply_markup, parse_mode="Markdown")
     return ConversationHandler.END
 
-# ----------------- ADMIN APPROVAL HANDLERS -----------------
+# ----------------- ADMIN APPROVAL -----------------
 
 async def handle_sub_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -171,30 +169,28 @@ async def handle_sub_approval(update: Update, context: ContextTypes.DEFAULT_TYPE
         users_col.update_one({"user_id": target_user_id}, {"$set": {"is_subscribed": True}})
         subs_col.update_one({"user_id": target_user_id}, {"$set": {"status": "approved"}})
 
-        await query.edit_message_caption(caption=f"{query.message.caption}\n\n✅ **Approved by Admin!**")
+        await query.edit_message_caption(caption=f"{query.message.caption}\n\n✅ **Approved!**")
         
-        # Notify User
         try:
             await context.bot.send_message(
                 chat_id=target_user_id,
-                text="🎉 **আপনার সাবস্ক্রিপশন সফলভাবে অনুমোদিত হয়েছে!**\nএখন বোটের সমস্ত সার্ভিস ব্যবহার করতে পারবেন।",
+                text="🎉 **আপনার সাবস্ক্রিপশন সফলভাবে অনুমোদিত হয়েছে!**",
                 reply_markup=get_main_keyboard(is_subscribed=True)
             )
         except Exception as e:
-            print(f"Error notifying user: {e}")
+            print(f"User Notification Error: {e}")
 
     elif "sub_rej_" in data:
         subs_col.update_one({"user_id": target_user_id}, {"$set": {"status": "rejected"}})
-        await query.edit_message_caption(caption=f"{query.message.caption}\n\n❌ **Rejected by Admin!**")
+        await query.edit_message_caption(caption=f"{query.message.caption}\n\n❌ **Rejected!**")
         
-        # Notify User
         try:
             await context.bot.send_message(
                 chat_id=target_user_id,
-                text="❌ আপনার সাবস্ক্রিপশন রিকোয়েস্টটি বাতিল করা হয়েছে। সঠিক TrxID ও স্ক্রিনশট দিয়ে আবার চেষ্টা করুন।"
+                text="❌ আপনার সাবস্ক্রিপশন রিকোয়েস্টটি বাতিল করা হয়েছে।"
             )
         except Exception as e:
-            print(f"Error notifying user: {e}")
+            print(f"User Notification Error: {e}")
 
 # ----------------- USER MENU ACTIONS -----------------
 
@@ -207,12 +203,10 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ আপনি বোট ব্যবহার করতে পারবেন না।")
         return
 
-    # Subscriptions Security Check
     if user_id != ADMIN_ID and not user.get("is_subscribed", False):
         await update.message.reply_text("⚠️ পূর্বে সাবস্ক্রিপশন সম্পন্ন করুন!", reply_markup=get_main_keyboard(is_subscribed=False))
         return
 
-    # 1. Buy Number
     if text == "📱 Buy Number":
         active_order = orders_col.find_one({"user_id": user_id})
         if active_order:
@@ -222,7 +216,7 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             await update.message.reply_text(
-                f"⚠️ **একটিভ নম্বর রয়েছে!**\n📞 নম্বর: `{active_order['phone']}`\n⏳ OTP-এর জন্য অপেক্ষা করা হচ্ছে...",
+                f"⚠️ **একটিভ নম্বর রয়েছে!**\n📞 নম্বর: `{active_order['phone']}`",
                 reply_markup=reply_markup,
                 parse_mode="Markdown"
             )
@@ -241,16 +235,13 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text("🛒 **সার্ভিস নির্বাচন করুন:**", reply_markup=reply_markup)
 
-    # 2. Deposit
     elif text == "💳 Deposit (Binance)":
         binance_id = os.getenv("BINANCE_PAY_ID", "123456789")
         await update.message.reply_text(f"💰 **Binance Pay ID:** `{binance_id}`\n\nডলার পাঠিয়ে অ্যাডমিনকে জানান।", parse_mode="Markdown")
 
-    # 3. Profile
     elif text == "👤 Profile & Balance":
         await update.message.reply_text(f"👤 **ID:** `{user_id}`\n💵 **Balance:** `${user.get('balance', 0.0):.2f}`", parse_mode="Markdown")
 
-    # 4. History
     elif text == "📋 My History":
         history = user.get("history", [])
         if not history:
@@ -263,7 +254,7 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(msg, parse_mode="Markdown")
 
     elif text == "❓ Help & Support":
-        await update.message.reply_text(f"💬 সহায়তার জন্য বিকাশ নম্বর/অ্যাডমিনের সাথে যোগাযোগ করুন: {ADMIN_BKASH}")
+        await update.message.reply_text(f"💬 সহায়তার জন্য যোগাযোগ করুন: {ADMIN_BKASH}")
 
     elif text == "🔙 Main Menu":
         await start(update, context)
@@ -277,7 +268,6 @@ async def handle_admin_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = update.message.text
 
-    # View Subscribed Users History
     if text == "👥 View Subscribed History":
         sub_users = list(users_col.find({"is_subscribed": True}))
         if not sub_users:
@@ -287,16 +277,17 @@ async def handle_admin_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg = "📊 **সাবস্ক্রাইবড ইউজার হিস্ট্রি:**\n\n"
         for u in sub_users:
             count = len(u.get("history", []))
-            msg += f"👤 {u.get('name')} (`{u['user_id']}`)\n💰 Bal: ${u.get('balance', 0.0):.2f} | 📱 OTP Received: {count}\n-------------------\n"
+            msg += f"👤 {u.get('name')} (`{u['user_id']}`)\n💰 Bal: ${u.get('balance', 0.0):.2f} | 📱 OTP: {count}\n-------------------\n"
         
         await update.message.reply_text(msg, parse_mode="Markdown")
 
-# ----------------- MAIN EXECUTION -----------------
+# ----------------- MAIN SAFE RUNNER -----------------
 
-if __name__ == "__main__":
+def main():
+    # Build Application
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Subscription Conversation Handler
+    # Handlers
     sub_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^💳 সাবস্ক্রিপশন কিনুন \(৳৩০\)$"), start_subscription)],
         states={
@@ -308,13 +299,18 @@ if __name__ == "__main__":
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(sub_conv)
-    
-    # Callback Handlers for Admin Approvals
     app.add_handler(CallbackQueryHandler(handle_sub_approval, pattern="^sub_"))
-    
-    # Admin & User Text Handlers
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_user_menu))
     app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_admin_menu))
 
-    print("🤖 Bot Running with MongoDB & Subscriptions System...")
-    app.run_polling()
+    print("🤖 Bot started successfully...")
+
+    # Fix for Python 3.13 / Railway Asyncio Cleanup Bug
+    app.run_polling(
+        drop_pending_updates=True,
+        close_loop=False,
+        stop_signals=None
+    )
+
+if __name__ == "__main__":
+    main()

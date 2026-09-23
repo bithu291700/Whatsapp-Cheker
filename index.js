@@ -73,10 +73,10 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
 
     const waSock = makeWASocket({
-        version: [2, 3000, 1015901307],
         logger: pino({ level: 'fatal' }),
         printQRInTerminal: false,
-        browser: ["Ubuntu", "Chrome", "20.0.04"],
+        // Current WhatsApp Official Web Browser Signature
+        browser: ['Mac OS', 'Chrome', '121.0.0.0'],
         auth: {
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }))
@@ -93,14 +93,18 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
     waSock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
 
-        if (qr && phoneToPair && !codeRequested && !waSock.authState.creds.registered) {
+        // Force Pairing Code Trigger
+        if (phoneToPair && !codeRequested && !waSock.authState.creds.registered) {
             codeRequested = true;
             try {
-                await new Promise(r => setTimeout(r, 1500));
-                let code = await waSock.requestPairingCode(phoneToPair);
+                // Wait for socket handshake initialization
+                await new Promise(r => setTimeout(r, 2000));
+                
+                // Clean input phone string to pure digits
+                const cleanPhone = phoneToPair.toString().replace(/[^0-9]/g, '');
+                let code = await waSock.requestPairingCode(cleanPhone);
                 code = code?.match(/.{1,4}/g)?.join("-") || code;
 
-                // Send Pairing Code with Cancel Inline Button
                 bot.sendMessage(chatId, `🔑 **Pairing Code:** \`${code}\`\n\n👉 Apnar WhatsApp-er **Linked Devices > Link with Phone Number Instead**-e giye code bosiye din!`, {
                     parse_mode: "Markdown",
                     reply_markup: {
@@ -111,7 +115,7 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
                 });
             } catch (err) {
                 console.error("Pairing Request Error:", err);
-                bot.sendMessage(chatId, "❌ Pairing Fail! Phone number-e country code (e.g. 88017...) soho diyen.", { reply_markup: getMainReplyKeyboard() });
+                bot.sendMessage(chatId, "❌ Pairing Fail! Valid Country code সহ number diyen.", { reply_markup: getMainReplyKeyboard() });
             }
         }
 
@@ -145,7 +149,6 @@ bot.on('callback_query', async (query) => {
     if (data === "cancel_pairing") {
         delete userStates[chatId];
 
-        // Close and cleanup WhatsApp connection instance
         if (userSockets[chatId]) {
             try {
                 userSockets[chatId].end(undefined);
@@ -159,7 +162,7 @@ bot.on('callback_query', async (query) => {
         }
 
         await bot.answerCallbackQuery(query.id, { text: "Pairing Cancelled!" });
-        await bot.editMessageText("🚫 **Pairing attempt cancelled by user.**", {
+        await bot.editMessageText("🚫 **Pairing attempt cancelled.**", {
             chat_id: chatId,
             message_id: query.message.message_id,
             parse_mode: "Markdown"
@@ -262,4 +265,4 @@ bot.on('message', async (msg) => {
         }
     }
 });
-        
+                               

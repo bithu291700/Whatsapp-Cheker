@@ -23,9 +23,6 @@ active_orders = {}  # {user_id: {activation_id, phone, service_key, price, start
 deposits = {}       # {deposit_id: {user_id, amount, trx_id, photo_id, status}}
 traffic_log = []    # [{timestamp, service_name, country_name}]
 
-# States for Conversations
-DEP_AMT, DEP_TRX, DEP_SS = range(3)
-
 # Country Mapping (ID to Name & Flag)
 COUNTRY_MAP = {
     "0": {"name": "Russia", "flag": "🇷🇺"},
@@ -116,19 +113,19 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try:
                 res = requests.get(SMSBOWER_URL, params={"api_key": SMSBOWER_API_KEY, "action": "getBalance"}, timeout=5).text
                 if "ACCESS_BALANCE" in res:
-                    sms_bal = f"${res.split(':')[1]}"
+                    sms_bal = str(res.split(":")[1])
             except Exception:
                 sms_bal = "Error fetching"
 
             total_user_bal = sum(u["balance"] for u in users.values())
             msg = (
                 f"💳 **অ্যাডমিন অ্যাকাউন্ট ব্যালেন্স & ইনফো:**\n\n"
-                f"🌐 **SMS Bower API Balance:** `{sms_bal}`\n"
-                f"👥 **Total Bot Users:** `{len(users)}`\n"
-                f"💰 **Total User Balances:** `${total_user_bal:.2f}`"
+                f"🌐 **SMS Bower API Balance:** ${sms_bal}\n"
+                f"👥 **Total Bot Users:** {len(users)}\n"
+                f"💰 **Total User Balances:** ${total_user_bal:.2f}"
             )
         else:
-            msg = f"💳 **আপনার বর্তমান ব্যালেন্স:** `${user['balance']:.2f}`"
+            msg = f"💳 **আপনার বর্তমান ব্যালেন্স:** ${user['balance']:.2f}"
         
         await update.message.reply_text(msg, parse_mode="Markdown")
 
@@ -221,8 +218,8 @@ async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_T
 
             await query.edit_message_text(f"🌐 **{service_name} এর A to Z কান্ট্রি লিস্ট (Stock & Price সহ):**", reply_markup=InlineKeyboardMarkup(keyboard))
 
-        except Exception as e:
-            await query.edit_message_text(f"❌ API theke data ante somossha hoyeche: {str(e)}")
+        except Exception as err:
+            await query.edit_message_text(f"❌ API data fetch error: {str(err)}")
 
 async def handle_save_service(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -250,10 +247,8 @@ async def handle_save_service(update: Update, context: ContextTypes.DEFAULT_TYPE
             "max_price": cost + 0.50
         }
 
-        await query.edit_message_text(
-            f"✅ **{cinfo['flag']} {cinfo['name']} - {service_name}** অ্যাড করা হয়েছে!\n"
-            f"💵 Cost: ${cost} | Selling Price: ${cost+0.10:.2f} \vert{} Max Safety Limit:${cost+0.50:.2f}"
-        )
+        msg = f"✅ **{cinfo['flag']} {cinfo['name']} - {service_name}** অ্যাড করা হয়েছে!\n💵 Cost: ${cost} | Selling Price: ${cost+0.10:.2f} \vert{} Max Limit:${cost+0.50:.2f}"
+        await query.edit_message_text(msg, parse_mode="Markdown")
 
 # ----------------- BUY NUMBER & OTP FLOW -----------------
 
@@ -273,20 +268,22 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("❌ সার্ভিস পাওয়া যায়নি।")
             return
 
-        # Check Max Price Safety Filter
+        # Max Price Limit Check
         try:
             p_res = requests.get(SMSBOWER_URL, params={"api_key": SMSBOWER_API_KEY, "action": "getPrices", "service": s_data['service_code'], "country": s_data['country_id']}, timeout=5).json()
             current_api_cost = float(p_res.get(s_data['country_id'], {}).get(s_data['service_code'], {}).get("cost", 999))
             
             if current_api_cost > s_data['max_price']:
-                await query.edit_message_text(f"⚠️ **দাম বেশি হওয়ার কারণে পারচেজ ব্লক করা হয়েছে!**\nবর্তমান API Cost: ${current_api_cost}, Max Allowed Limit:${s_data['max_price']}")
+                msg_limit = f"⚠️ **দাম বেশি হওয়ার কারণে ব্লক করা হয়েছে!**\nAPI Cost: ${current_api_cost}, Max Allowed:${s_data['max_price']}"
+                await query.edit_message_text(msg_limit, parse_mode="Markdown")
                 return
         except Exception:
             pass
 
         price = s_data['custom_price']
         if user['balance'] < price:
-            await query.edit_message_text(f"❌ আপনার পর্যাপ্ত ব্যালেন্স নেই! প্রয়োজন: ${price:.2f}, আপনার আছে: ${user['balance']:.2f}")
+            msg_bal = f"❌ পর্যাপ্ত ব্যালেন্স নেই! প্রয়োজন: ${price:.2f}, আছে: ${user['balance']:.2f}"
+            await query.edit_message_text(msg_bal)
             return
 
         params = {
@@ -329,9 +326,11 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
                 await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
             else:
-                await query.edit_message_text(f"❌ নাম্বার পাওয়া যায়নি (Stock Empty)। Response: {res}")
+                msg_err = f"❌ নাম্বার পাওয়া যায়নি (Stock Empty)। API: {res}"
+                await query.edit_message_text(msg_err)
         except Exception as e:
-            await query.edit_message_text(f"❌ API ত্রুটি: {str(e)}")
+            msg_ex = f"❌ API ত্রুটি: {str(e)}"
+            await query.edit_message_text(msg_ex)
 
     elif data.startswith("chk_otp_"):
         order = active_orders.get(user_id)
@@ -382,5 +381,5 @@ if __name__ == "__main__":
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|🌐 Set Country|🛠 Set Service|👤 Profile|💳 Deposit|⚙️ Admin Panel|🔙 Main Menu)$"), handle_user_menu))
     app.add_handler(MessageHandler(filters.Regex("^➕ Add Service$"), admin_add_service_menu))
 
-    print("🤖 Bot is running smoothly without syntax errors...")
+    print("🤖 Bot is starting cleanly...")
     app.run_polling(drop_pending_updates=True)

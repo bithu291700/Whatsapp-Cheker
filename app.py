@@ -1,6 +1,8 @@
 import os
+import sys
 import requests
 from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, CallbackQueryHandler, 
@@ -17,8 +19,22 @@ MONGO_URI = os.getenv("MONGO_URI")
 ADMIN_BKASH = "01858582881"
 SUB_PRICE_BDT = 30
 
-# ----------------- DATABASE SETUP -----------------
-mongo_client = MongoClient(MONGO_URI)
+# ----------------- DATABASE CONNECTION -----------------
+if not MONGO_URI:
+    print("❌ ERROR: MONGO_URI Environment Variable is NOT set in Railway!")
+    print("👉 Please add MONGO_URI in Railway -> Variables")
+    sys.exit(1)
+
+try:
+    # 5 সেকেন্ডের সার্ভার সিলেকশন টাইমআউট সেট করা হলো
+    mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    # কানেকশন চেক করা হচ্ছে
+    mongo_client.admin.command('ping')
+    print("✅ MongoDB Connected Successfully!")
+except (ConnectionFailure, ServerSelectionTimeoutError) as e:
+    print(f"❌ Could not connect to MongoDB: {e}")
+    sys.exit(1)
+
 db = mongo_client["sms_bot_db"]
 
 users_col = db["users"]

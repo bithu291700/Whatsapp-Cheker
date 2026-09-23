@@ -37,6 +37,7 @@ COUNTRY_MAP = {
     "9": {"name": "Vietnam", "flag": "🇻🇳"},
     "10": {"name": "Kyrgyzstan", "flag": "🇰🇬"},
     "12": {"name": "USA", "flag": "🇺🇸"},
+    "187": {"name": "USA Virtual", "flag": "🇺🇸"},
     "13": {"name": "Israel", "flag": "🇮🇱"},
     "14": {"name": "Hong Kong", "flag": "🇭🇰"},
     "15": {"name": "Poland", "flag": "🇵🇱"},
@@ -48,9 +49,9 @@ COUNTRY_MAP = {
 # ----------------- KEYBOARDS -----------------
 
 def get_main_keyboard(is_admin=False):
+    # Set Service and Set Country removed as requested
     keyboard = [
         [KeyboardButton("💳 Account Balance"), KeyboardButton("🛒 Buy Number")],
-        [KeyboardButton("🌐 Set Country"), KeyboardButton("🛠 Set Service")],
         [KeyboardButton("👤 Profile"), KeyboardButton("💳 Deposit")]
     ]
     if is_admin:
@@ -169,12 +170,18 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ বর্তমানে কোনো সার্ভিস অ্যাড করা নেই।")
             return
 
+        # Sort services by custom_price lowest first
+        sorted_services = sorted(services.items(), key=lambda x: x[1]['custom_price'])
+
         keyboard = []
-        for key, s_data in services.items():
+        for key, s_data in sorted_services:
             btn_text = "{} {} - {} (${:.2f})".format(s_data['flag'], s_data['country_name'], s_data['service_name'], s_data['custom_price'])
             keyboard.append([InlineKeyboardButton(btn_text, callback_data="buynum_" + str(key))])
 
-        await update.message.reply_text("🛒 **একটি সার্ভিস সিলেক্ট করুন:**", reply_markup=InlineKeyboardMarkup(keyboard))
+        # Back button at bottom
+        keyboard.append([InlineKeyboardButton("🔙 Back to Menu", callback_data="nav_back_main")])
+
+        await update.message.reply_text("🛒 **কম দামের ক্রমানুসারে সার্ভিস সিলেক্ট করুন:**", reply_markup=InlineKeyboardMarkup(keyboard))
 
 # ----------------- ADD SERVICE -----------------
 
@@ -183,7 +190,8 @@ async def admin_add_service_menu(update: Update, context: ContextTypes.DEFAULT_T
         return
 
     keyboard = [
-        [InlineKeyboardButton("✈️ Telegram", callback_data="addcat_tg"), InlineKeyboardButton("💬 WhatsApp", callback_data="addcat_wa")]
+        [InlineKeyboardButton("✈️ Telegram", callback_data="addcat_tg"), InlineKeyboardButton("💬 WhatsApp", callback_data="addcat_wa")],
+        [InlineKeyboardButton("🔙 Back", callback_data="nav_back_admin")]
     ]
     await update.message.reply_text("📂 **কোন ক্যাটাগরির সার্ভিস অ্যাড করতে চান সিলেক্ট করুন:**", reply_markup=InlineKeyboardMarkup(keyboard))
 
@@ -191,6 +199,15 @@ async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_T
     query = update.callback_query
     await query.answer()
     data = query.data
+
+    if data == "nav_back_main":
+        await query.message.delete()
+        await start(update, context)
+        return
+
+    if data == "nav_back_admin":
+        await query.edit_message_text("👑 **অ্যাডমিন প্যানেল**")
+        return
 
     if data.startswith("addcat_"):
         code = data.replace("addcat_", "")
@@ -200,27 +217,48 @@ async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_T
         
         try:
             res = requests.get(SMSBOWER_URL, params=params, timeout=10).json()
-            keyboard = []
+            country_list = []
+
             for cid, cinfo in COUNTRY_MAP.items():
                 if cid in res and code in res[cid]:
                     cost = float(res[cid][code].get("cost", 0))
-                    count = res[cid][code].get("count", 0)
-                    
-                    s_key = "{}_{}".format(code, cid)
-                    status = "✅ Added" if s_key in services else "➕ Add"
-                    
-                    btn_text = "{} {} - {} (${}) [Stock: {}] [{}]".format(cinfo['flag'], cinfo['name'], service_name, cost, count, status)
-                    cb_data = "save_s_{}_{}".format(s_key, cost)
-                    keyboard.append([InlineKeyboardButton(btn_text, callback_data=cb_data)])
+                    count = int(res[cid][code].get("count", 0))
+                    country_list.append({
+                        "cid": cid,
+                        "name": cinfo['name'],
+                        "flag": cinfo['flag'],
+                        "cost": cost,
+                        "count": count
+                    })
+
+            # Sort by lowest price first
+            country_list = sorted(country_list, key=lambda x: x['cost'])
+
+            keyboard = []
+            for item in country_list:
+                s_key = "{}_{}".format(code, item['cid'])
+                status = "✅ Added" if s_key in services else "➕ Add"
+                
+                btn_text = "{} {} - {} (${}) [Stock: {}] [{}]".format(
+                    item['flag'], item['name'], service_name, item['cost'], item['count'], status
+                )
+                cb_data = "save_s_{}_{}".format(s_key, item['cost'])
+                keyboard.append([InlineKeyboardButton(btn_text, callback_data=cb_data)])
+
+            # Back button at bottom
+            keyboard.append([InlineKeyboardButton("🔙 Back", callback_data="nav_back_addcat")])
 
             if not keyboard:
                 await query.edit_message_text("❌ কোনো কান্ট্রি/স্টক পাওয়া যায়নি।")
                 return
 
-            await query.edit_message_text("🌐 **{} এর A to Z কান্ট্রি লিস্ট (Stock & Price সহ):**".format(service_name), reply_markup=InlineKeyboardMarkup(keyboard))
+            await query.edit_message_text("🌐 **{} এর সবচেয়ে কম রেটের কান্ট্রি লিস্ট (Lowest Price First):**".format(service_name), reply_markup=InlineKeyboardMarkup(keyboard))
 
         except Exception as err:
             await query.edit_message_text("❌ API data fetch error: " + str(err))
+
+    elif data == "nav_back_addcat":
+        await admin_add_service_menu(update, context)
 
 async def handle_save_service(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -251,13 +289,13 @@ async def handle_save_service(update: Update, context: ContextTypes.DEFAULT_TYPE
             "max_price": max_limit
         }
 
-        # SAFE FORMATTING WITHOUT F-STRING SYNTAX ISSUES
         msg = (
             "✅ **{} {} - {}** অ্যাড করা হয়েছে!\n"
             "💵 Cost: ${:.2f} | Selling Price: ${:.2f} \vert{} Max Limit:${:.2f}"
         ).format(cinfo['flag'], cinfo['name'], service_name, cost, selling_price, max_limit)
 
-        await query.edit_message_text(msg, parse_mode="Markdown")
+        keyboard = [[InlineKeyboardButton("🔙 Back to Services", callback_data="addcat_" + code)]]
+        await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
 
 # ----------------- BUY NUMBER & OTP FLOW -----------------
 
@@ -383,11 +421,11 @@ if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(handle_category_select, pattern="^addcat_"))
+    app.add_handler(CallbackQueryHandler(handle_category_select, pattern="^(addcat_|nav_back_)"))
     app.add_handler(CallbackQueryHandler(handle_save_service, pattern="^save_s_"))
     app.add_handler(CallbackQueryHandler(handle_buy_action, pattern="^(buynum_|chk_otp_|cancel_ord_)"))
 
-    app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|🌐 Set Country|🛠 Set Service|👤 Profile|💳 Deposit|⚙️ Admin Panel|🔙 Main Menu)$"), handle_user_menu))
+    app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|💳 Deposit|⚙️ Admin Panel|🔙 Main Menu)$"), handle_user_menu))
     app.add_handler(MessageHandler(filters.Regex("^➕ Add Service$"), admin_add_service_menu))
 
     print("🤖 Bot is starting cleanly...")

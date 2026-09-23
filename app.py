@@ -16,19 +16,26 @@ ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 BINANCE_PAY_ID = os.getenv("BINANCE_PAY_ID", "123456789")
 SMSBOWER_URL = "https://smsbower.online/stubs/handler_api.php"
 
-# CONVERSATION STATES FOR DEPOSIT
+# CONVERSATION STATES
 WAITING_DEPOSIT_AMOUNT = 1
 WAITING_TRX_ID = 2
 WAITING_SCREENSHOT = 3
+
+WAITING_BAN_ID = 4
+WAITING_UNBAN_ID = 5
+WAITING_BROADCAST_MSG = 6
+WAITING_PRICE_SERVICE_KEY = 7
+WAITING_NEW_PRICE = 8
 
 # ----------------- IN-MEMORY STORAGE -----------------
 users = {}          # {user_id: {name, username, balance, total_otp, is_banned}}
 active_orders = {}  # {user_id: {activation_id, phone, service_name, country_name, flag, price}}
 deposits = {}       # {deposit_id: {user_id, amount, trx_id, photo_id, status}}
+traffic_log = []    # [{timestamp, service_name, country_name}]
 
-# FIXED ALLOWED SERVICES (WhatsApp & Telegram)
+# FIXED SERVICES WITH CUSTOM SELLING PRICE SUPPORT
 PREDEFINED_SERVICES = {
-    # --- WHATSAPP SERVICES ---
+    # WhatsApp Services
     "wa_usa_1": {"service_code": "wa", "country_id": "187", "country_name": "USA Virtual (Tier 1)", "flag": "🇺🇸", "max_price": 0.12, "selling_price": 0.12},
     "wa_usa_2": {"service_code": "wa", "country_id": "187", "country_name": "USA Virtual (Tier 2)", "flag": "🇺🇸", "max_price": 0.134, "selling_price": 0.134},
     "wa_iraq_1": {"service_code": "wa", "country_id": "185", "country_name": "Iraq (Tier 1)", "flag": "🇮🇶", "max_price": 0.151, "selling_price": 0.151},
@@ -38,7 +45,7 @@ PREDEFINED_SERVICES = {
     "wa_gh": {"service_code": "wa", "country_id": "38", "country_name": "Ghana", "flag": "🇬🇭", "max_price": 0.067, "selling_price": 0.067},
     "wa_af": {"service_code": "wa", "country_id": "179", "country_name": "Afghanistan", "flag": "🇦🇫", "max_price": 0.119, "selling_price": 0.119},
 
-    # --- TELEGRAM SERVICES ---
+    # Telegram Services
     "tg_usa": {"service_code": "tg", "country_id": "187", "country_name": "USA Virtual", "flag": "🇺🇸", "max_price": 0.20, "selling_price": 0.20},
     "tg_am": {"service_code": "tg", "country_id": "148", "country_name": "Armenia", "flag": "🇦🇲", "max_price": 0.354, "selling_price": 0.354},
     "tg_cl": {"service_code": "tg", "country_id": "151", "country_name": "Chile", "flag": "🇨🇱", "max_price": 0.108, "selling_price": 0.108},
@@ -55,6 +62,15 @@ def get_main_keyboard(is_admin=False):
     ]
     if is_admin:
         keyboard.append([KeyboardButton("⚙️ Admin Panel")])
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
+def get_admin_keyboard():
+    keyboard = [
+        [KeyboardButton("👥 View All Users"), KeyboardButton("💰 Set Service Price")],
+        [KeyboardButton("📊 Live Traffic"), KeyboardButton("📢 Broadcast")],
+        [KeyboardButton("🚫 Ban User"), KeyboardButton("✅ Unban User")],
+        [KeyboardButton("🔙 Main Menu")]
+    ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 def get_user_data(user_id, name, username):
@@ -85,7 +101,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "👋 **Hello {}!**\n\nSwagotom amader SMS Service Bote.".format(name)
     await update.message.reply_text(msg, reply_markup=get_main_keyboard(is_admin=is_admin), parse_mode="Markdown")
 
-# ----------------- USER MENU HANDLERS -----------------
+# ----------------- USER & ADMIN MENU HANDLERS -----------------
 
 async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
@@ -131,7 +147,7 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ).format(user_id, user['name'], user['balance'], user['total_otp'])
         await update.message.reply_text(msg, parse_mode="Markdown")
 
-    # 3. BUY NUMBER MENU
+    # 3. BUY NUMBER
     elif text == "🛒 Buy Number":
         if user_id in active_orders:
             order = active_orders[user_id]
@@ -155,10 +171,38 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         await update.message.reply_text("📂 **Kon service-er number kinte chan select korun:**", reply_markup=InlineKeyboardMarkup(keyboard))
 
+    # 4. ADMIN PANEL
+    elif text == "⚙️ Admin Panel" and user_id == ADMIN_ID:
+        await update.message.reply_text("👑 **Admin Panele Swagotom!**", reply_markup=get_admin_keyboard(), parse_mode="Markdown")
+
+    # 5. VIEW ALL USERS (ADMIN)
+    elif text == "👥 View All Users" and user_id == ADMIN_ID:
+        if not users:
+            await update.message.reply_text("❌ Kono user nei.")
+            return
+        
+        msg = "👥 **Total Users List:**\n\n"
+        for uid, udata in users.items():
+            status = "🚫 Banned" if udata['is_banned'] else "✅ Active"
+            msg += f"• `{uid}` | {udata['name']} | Bal: ${udata['balance']:.2f} | [{status}]\n"
+        await update.message.reply_text(msg, parse_mode="Markdown")
+
+    # 6. LIVE TRAFFIC (ADMIN)
+    elif text == "📊 Live Traffic" and user_id == ADMIN_ID:
+        if not traffic_log:
+            await update.message.reply_text("📊 Kono live traffic log nei.")
+            return
+        
+        msg = "📊 **Recent OTP Traffic Log:**\n\n"
+        for t in traffic_log[-10:]:
+            time_str = t['timestamp'].strftime("%H:%M:%S")
+            msg += f"• [{time_str}] {t['service_name']} - {t['country_name']}\n"
+        await update.message.reply_text(msg, parse_mode="Markdown")
+
     elif text == "🔙 Main Menu":
         await start(update, context)
 
-# ----------------- BUY NUMBER & CATEGORY FLOW -----------------
+# ----------------- BUY NUMBER FLOW -----------------
 
 async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -181,9 +225,7 @@ async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_T
                 keyboard.append([InlineKeyboardButton(btn_text, callback_data="buynum_" + str(s_key))])
 
         keyboard.append([InlineKeyboardButton("🔙 Back", callback_data="nav_back_buymenu")])
-        
-        msg_title = "🌐 **{} Services List (Fixed Lowest Rates):**".format(service_label)
-        await query.edit_message_text(msg_title, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+        await query.edit_message_text("🌐 **{} Services List:**".format(service_label), reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
 
     elif data == "nav_back_buymenu":
         keyboard = [
@@ -209,7 +251,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("❌ Service pawa jayni.")
             return
 
-        # Realtime Price & Limit Safety Check from API
+        # Realtime Limit Safety Check
         try:
             p_res = requests.get(SMSBOWER_URL, params={"api_key": SMSBOWER_API_KEY, "action": "getPrices", "service": s_data['service_code'], "country": s_data['country_id']}, timeout=5).json()
             current_api_cost = float(p_res.get(s_data['country_id'], {}).get(s_data['service_code'], {}).get("cost", 999))
@@ -221,6 +263,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
 
+        # ADMIN SET SELLING PRICE CHARGED FROM USER BALANCE
         price = s_data['selling_price']
 
         if user['balance'] < price:
@@ -242,6 +285,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 act_id = parts[1]
                 phone = parts[2]
 
+                # Deduct exactly the Admin-set Custom Price
                 user['balance'] -= price
 
                 service_name = "WhatsApp" if s_data['service_code'] == "wa" else "Telegram"
@@ -285,6 +329,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if "STATUS_OK" in res:
             otp_code = res.split(":")[1]
             user['total_otp'] += 1
+            traffic_log.append({"timestamp": datetime.now(), "service_name": order['service_name'], "country_name": order['country_name']})
 
             msg = (
                 "🎉 **OTP Received!**\n\n"
@@ -310,6 +355,104 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             user['balance'] += order['price']
             del active_orders[user_id]
             await query.edit_message_text("✅ Order batil kora hoyeche ebang balance ferot deya hoyeche.")
+
+# ----------------- ADMIN PRICE SETTING CONVERSATION -----------------
+
+async def admin_set_price_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_ID:
+        return ConversationHandler.END
+
+    keyboard = []
+    for s_key, s_data in PREDEFINED_SERVICES.items():
+        btn_text = f"{s_data['flag']} {s_data['country_name']} (Cur: ${s_data['selling_price']})"
+        keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"setpr_{s_key}")])
+
+    keyboard.append([InlineKeyboardButton("❌ Cancel", callback_data="admin_cancel")])
+    await update.message.reply_text("💰 **Kon service-er custom price set korte chan select korun:**", reply_markup=InlineKeyboardMarkup(keyboard))
+    return WAITING_PRICE_SERVICE_KEY
+
+async def admin_price_service_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "admin_cancel":
+        await query.edit_message_text("❌ Cancelled.")
+        return ConversationHandler.END
+
+    s_key = query.data.replace("setpr_", "")
+    context.user_data['selected_service_key'] = s_key
+    s_data = PREDEFINED_SERVICES[s_key]
+
+    await query.edit_message_text(f"📝 **{s_data['flag']} {s_data['country_name']}** -er jonno new selling price ($) type korun:")
+    return WAITING_NEW_PRICE
+
+async def admin_save_new_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        new_price = float(update.message.text.strip())
+        s_key = context.user_data['selected_service_key']
+        
+        PREDEFINED_SERVICES[s_key]['selling_price'] = new_price
+        s_data = PREDEFINED_SERVICES[s_key]
+
+        await update.message.reply_text(f"✅ Price Updated!\n\n{s_data['flag']} **{s_data['country_name']}** Custom Price set to: **${new_price:.3f}**", parse_mode="Markdown")
+    except ValueError:
+        await update.message.reply_text("❌ Shothik songkha likhun. Example: 0.15")
+        return WAITING_NEW_PRICE
+
+    return ConversationHandler.END
+
+# ----------------- ADMIN BAN / UNBAN / BROADCAST -----------------
+
+async def admin_ban_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_ID: return ConversationHandler.END
+    await update.message.reply_text("🚫 Ban korar jonno User ID type korun:")
+    return WAITING_BAN_ID
+
+async def admin_ban_submit(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        target_id = int(update.message.text.strip())
+        if target_id in users:
+            users[target_id]['is_banned'] = True
+            await update.message.reply_text(f"✅ User `{target_id}` ban kora hoyeche.", parse_mode="Markdown")
+        else:
+            await update.message.reply_text("❌ User ID pawa jayni.")
+    except ValueError:
+        await update.message.reply_text("❌ Invalid ID format.")
+    return ConversationHandler.END
+
+async def admin_unban_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_ID: return ConversationHandler.END
+    await update.message.reply_text("✅ Unban korar jonno User ID type korun:")
+    return WAITING_UNBAN_ID
+
+async def admin_unban_submit(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        target_id = int(update.message.text.strip())
+        if target_id in users:
+            users[target_id]['is_banned'] = False
+            await update.message.reply_text(f"✅ User `{target_id}` unban kora hoyeche.", parse_mode="Markdown")
+        else:
+            await update.message.reply_text("❌ User ID pawa jayni.")
+    except ValueError:
+        await update.message.reply_text("❌ Invalid ID format.")
+    return ConversationHandler.END
+
+async def admin_broadcast_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_ID: return ConversationHandler.END
+    await update.message.reply_text("📢 Sob user-er kache jabe emon broadcast text message-ti type korun:")
+    return WAITING_BROADCAST_MSG
+
+async def admin_broadcast_submit(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message.text
+    count = 0
+    for uid in users.keys():
+        try:
+            await context.bot.send_message(chat_id=uid, text=f"📢 **Notification:**\n\n{msg}", parse_mode="Markdown")
+            count += 1
+        except Exception:
+            pass
+    await update.message.reply_text(f"✅ Broadcast success! `{count}` jon user message peyeche.", parse_mode="Markdown")
+    return ConversationHandler.END
 
 # ----------------- BINANCE DEPOSIT FLOW -----------------
 
@@ -377,10 +520,8 @@ async def deposit_screenshot_received(update: Update, context: ContextTypes.DEFA
         "status": "pending"
     }
 
-    # User Confirmation
     await update.message.reply_text("✅ **Apnar deposit request admin-er kache pathano hoyeche!**\nAdmin verify kore approve korle balance add hoye jabe.")
 
-    # Send Notification to Admin
     if ADMIN_ID != 0:
         keyboard = [
             [
@@ -408,7 +549,7 @@ async def deposit_screenshot_received(update: Update, context: ContextTypes.DEFA
 
     return ConversationHandler.END
 
-# ----------------- ADMIN DEPOSIT APPROVAL HANDLER -----------------
+# ----------------- ADMIN APPROVAL HANDLER -----------------
 
 async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -420,7 +561,7 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
         dep_info = deposits.get(dep_id)
 
         if not dep_info:
-            await query.edit_message_caption("❌ Deposit request pawa jayni ba expired.")
+            await query.edit_message_caption("❌ Deposit request pawa jayni.")
             return
 
         target_user = users.get(dep_info['user_id'])
@@ -430,7 +571,6 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
             if target_user:
                 target_user['balance'] += dep_info['amount']
 
-            # Notify User
             try:
                 msg_u = "🎉 **Apnar deposit approve hoyeche!**\n💵 Added: **${:.2f}**".format(dep_info['amount'])
                 await context.bot.send_message(chat_id=dep_info['user_id'], text=msg_u, parse_mode="Markdown")
@@ -442,7 +582,7 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
         elif data.startswith("deprej_"):
             dep_info['status'] = "rejected"
             try:
-                msg_u = "❌ **Apnar deposit request-ti reject kora hoyeche.**\nTRX ID Check korun ba support-e jogajog korun."
+                msg_u = "❌ **Apnar deposit request-ti reject kora hoyeche.**"
                 await context.bot.send_message(chat_id=dep_info['user_id'], text=msg_u, parse_mode="Markdown")
             except Exception:
                 pass
@@ -468,14 +608,49 @@ if __name__ == "__main__":
         fallbacks=[CommandHandler("start", start)]
     )
 
+    # Admin Set Price Conversation Handler
+    price_conv = ConversationHandler(
+        entry_points=[MessageHandler(filters.Regex("^💰 Set Service Price$"), admin_set_price_start)],
+        states={
+            WAITING_PRICE_SERVICE_KEY: [CallbackQueryHandler(admin_price_service_selected, pattern="^(setpr_|admin_cancel)")],
+            WAITING_NEW_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_save_new_price)]
+        },
+        fallbacks=[CommandHandler("start", start)]
+    )
+
+    # Admin Ban Conversation Handler
+    ban_conv = ConversationHandler(
+        entry_points=[MessageHandler(filters.Regex("^🚫 Ban User$"), admin_ban_start)],
+        states={WAITING_BAN_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_ban_submit)]},
+        fallbacks=[CommandHandler("start", start)]
+    )
+
+    # Admin Unban Conversation Handler
+    unban_conv = ConversationHandler(
+        entry_points=[MessageHandler(filters.Regex("^✅ Unban User$"), admin_unban_start)],
+        states={WAITING_UNBAN_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_unban_submit)]},
+        fallbacks=[CommandHandler("start", start)]
+    )
+
+    # Admin Broadcast Conversation Handler
+    broadcast_conv = ConversationHandler(
+        entry_points=[MessageHandler(filters.Regex("^📢 Broadcast$"), admin_broadcast_start)],
+        states={WAITING_BROADCAST_MSG: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_broadcast_submit)]},
+        fallbacks=[CommandHandler("start", start)]
+    )
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(deposit_conv)
+    app.add_handler(price_conv)
+    app.add_handler(ban_conv)
+    app.add_handler(unban_conv)
+    app.add_handler(broadcast_conv)
 
     app.add_handler(CallbackQueryHandler(handle_category_select, pattern="^(cat_|nav_back_)"))
     app.add_handler(CallbackQueryHandler(handle_buy_action, pattern="^(buynum_|chk_otp_|cancel_ord_)"))
     app.add_handler(CallbackQueryHandler(handle_admin_approval, pattern="^(depapp_|deprej_)"))
 
-    app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|🔙 Main Menu)$"), handle_user_menu))
+    app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu)$"), handle_user_menu))
 
-    print("🤖 Bot is running smoothly with clean syntax & deposit flow...")
+    print("🤖 Bot is running smoothly with Admin Panel features...")
     app.run_polling(drop_pending_updates=True)

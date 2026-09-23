@@ -33,24 +33,24 @@ active_orders = {}  # {user_id: {activation_id, phone, service_name, country_nam
 deposits = {}       # {deposit_id: {user_id, amount, trx_id, photo_id, status}}
 traffic_log = []    # [{timestamp, service_name, country_name}]
 
-# FIXED SERVICES WITH CUSTOM SELLING PRICE SUPPORT
+# STRICT MAX PRICE LIMIT SERVICES (0.12 - 0.14 STRICT RANGE)
 PREDEFINED_SERVICES = {
     # WhatsApp Services
-    "wa_usa_1": {"service_code": "wa", "country_id": "187", "country_name": "USA Virtual (Tier 1)", "flag": "🇺🇸", "selling_price": 0.12},
-    "wa_usa_2": {"service_code": "wa", "country_id": "187", "country_name": "USA Virtual (Tier 2)", "flag": "🇺🇸", "selling_price": 0.134},
-    "wa_iraq_1": {"service_code": "wa", "country_id": "185", "country_name": "Iraq (Tier 1)", "flag": "🇮🇶", "selling_price": 0.151},
-    "wa_iraq_2": {"service_code": "wa", "country_id": "185", "country_name": "Iraq (Tier 2)", "flag": "🇮🇶", "selling_price": 0.163},
-    "wa_ph": {"service_code": "wa", "country_id": "4", "country_name": "Philippines", "flag": "🇵🇭", "selling_price": 0.144},
-    "wa_ua": {"service_code": "wa", "country_id": "1", "country_name": "Ukraine", "flag": "🇺🇦", "selling_price": 0.039},
-    "wa_gh": {"service_code": "wa", "country_id": "38", "country_name": "Ghana", "flag": "🇬🇭", "selling_price": 0.067},
-    "wa_af": {"service_code": "wa", "country_id": "179", "country_name": "Afghanistan", "flag": "🇦🇫", "selling_price": 0.119},
+    "wa_usa_1": {"service_code": "wa", "country_id": "187", "country_name": "USA Virtual (Tier 1)", "flag": "🇺🇸", "max_price": 0.120, "selling_price": 0.120},
+    "wa_usa_2": {"service_code": "wa", "country_id": "187", "country_name": "USA Virtual (Tier 2)", "flag": "🇺🇸", "max_price": 0.134, "selling_price": 0.134},
+    "wa_iraq_1": {"service_code": "wa", "country_id": "185", "country_name": "Iraq (Tier 1)", "flag": "🇮🇶", "max_price": 0.151, "selling_price": 0.151},
+    "wa_iraq_2": {"service_code": "wa", "country_id": "185", "country_name": "Iraq (Tier 2)", "flag": "🇮🇶", "max_price": 0.163, "selling_price": 0.163},
+    "wa_ph": {"service_code": "wa", "country_id": "4", "country_name": "Philippines", "flag": "🇵🇭", "max_price": 0.144, "selling_price": 0.144},
+    "wa_ua": {"service_code": "wa", "country_id": "1", "country_name": "Ukraine", "flag": "🇺🇦", "max_price": 0.039, "selling_price": 0.039},
+    "wa_gh": {"service_code": "wa", "country_id": "38", "country_name": "Ghana", "flag": "🇬🇭", "max_price": 0.067, "selling_price": 0.067},
+    "wa_af": {"service_code": "wa", "country_id": "179", "country_name": "Afghanistan", "flag": "🇦🇫", "max_price": 0.119, "selling_price": 0.119},
 
     # Telegram Services
-    "tg_usa": {"service_code": "tg", "country_id": "187", "country_name": "USA Virtual", "flag": "🇺🇸", "selling_price": 0.20},
-    "tg_am": {"service_code": "tg", "country_id": "148", "country_name": "Armenia", "flag": "🇦🇲", "selling_price": 0.354},
-    "tg_cl": {"service_code": "tg", "country_id": "151", "country_name": "Chile", "flag": "🇨🇱", "selling_price": 0.108},
-    "tg_ca": {"service_code": "tg", "country_id": "36", "country_name": "Canada", "flag": "🇨🇦", "selling_price": 0.132},
-    "tg_iq": {"service_code": "tg", "country_id": "185", "country_name": "Iraq", "flag": "🇮🇶", "selling_price": 0.354}
+    "tg_usa": {"service_code": "tg", "country_id": "187", "country_name": "USA Virtual", "flag": "🇺🇸", "max_price": 0.200, "selling_price": 0.200},
+    "tg_am": {"service_code": "tg", "country_id": "148", "country_name": "Armenia", "flag": "🇦🇲", "max_price": 0.354, "selling_price": 0.354},
+    "tg_cl": {"service_code": "tg", "country_id": "151", "country_name": "Chile", "flag": "🇨🇱", "max_price": 0.108, "selling_price": 0.108},
+    "tg_ca": {"service_code": "tg", "country_id": "36", "country_name": "Canada", "flag": "🇨🇦", "max_price": 0.132, "selling_price": 0.132},
+    "tg_iq": {"service_code": "tg", "country_id": "185", "country_name": "Iraq", "flag": "🇮🇶", "max_price": 0.354, "selling_price": 0.354}
 }
 
 # ----------------- KEYBOARDS -----------------
@@ -258,7 +258,22 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text(msg_bal)
             return
 
-        # Direct Purchase Attempt from API without strict max_price block
+        # LIVE STRICT MAX PRICE FILTER CHECK
+        try:
+            p_res = requests.get(SMSBOWER_URL, params={"api_key": SMSBOWER_API_KEY, "action": "getPrices", "service": s_data['service_code'], "country": s_data['country_id']}, timeout=5).json()
+            current_api_cost = float(p_res.get(s_data['country_id'], {}).get(s_data['service_code'], {}).get("cost", 999))
+            
+            if current_api_cost > s_data['max_price']:
+                msg_limit = (
+                    "⚠️ **Max Price Exceeded!**\n"
+                    "SMS Bower API Cost (${:.3f}) max limit (${:.3f}) er upore.\n"
+                    "Doya kore rate $0.12-$0.14 e ashle abar chesta korun."
+                ).format(current_api_cost, s_data['max_price'])
+                await query.edit_message_text(msg_limit, parse_mode="Markdown")
+                return
+        except Exception:
+            pass
+
         params = {
             "api_key": SMSBOWER_API_KEY,
             "action": "getNumber",
@@ -646,5 +661,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu)$"), handle_user_menu))
 
-    print("🤖 Bot is running smoothly...")
+    print("🤖 Bot running with strict max limit safety filters...")
     app.run_polling(drop_pending_updates=True)

@@ -184,7 +184,7 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg = "👥 **Total Users List:**\n\n"
         for uid, udata in users.items():
             status = "🚫 Banned" if udata['is_banned'] else "✅ Active"
-            msg += f"• `{uid}` | {udata['name']} | Bal: ${udata['balance']:.2f} | [{status}]\n"
+            msg += "• `{}` | {} | Bal: ${:.2f} | [{}]\n".format(uid, udata['name'], udata['balance'], status)
         await update.message.reply_text(msg, parse_mode="Markdown")
 
     # 6. LIVE TRAFFIC (ADMIN)
@@ -196,7 +196,7 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg = "📊 **Recent OTP Traffic Log:**\n\n"
         for t in traffic_log[-10:]:
             time_str = t['timestamp'].strftime("%H:%M:%S")
-            msg += f"• [{time_str}] {t['service_name']} - {t['country_name']}\n"
+            msg += "• [{}] {} - {}\n".format(time_str, t['service_name'], t['country_name'])
         await update.message.reply_text(msg, parse_mode="Markdown")
 
     elif text == "🔙 Main Menu":
@@ -251,7 +251,6 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("❌ Service pawa jayni.")
             return
 
-        # Realtime Limit Safety Check
         try:
             p_res = requests.get(SMSBOWER_URL, params={"api_key": SMSBOWER_API_KEY, "action": "getPrices", "service": s_data['service_code'], "country": s_data['country_id']}, timeout=5).json()
             current_api_cost = float(p_res.get(s_data['country_id'], {}).get(s_data['service_code'], {}).get("cost", 999))
@@ -263,7 +262,6 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
 
-        # ADMIN SET SELLING PRICE CHARGED FROM USER BALANCE
         price = s_data['selling_price']
 
         if user['balance'] < price:
@@ -285,7 +283,6 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 act_id = parts[1]
                 phone = parts[2]
 
-                # Deduct exactly the Admin-set Custom Price
                 user['balance'] -= price
 
                 service_name = "WhatsApp" if s_data['service_code'] == "wa" else "Telegram"
@@ -364,8 +361,8 @@ async def admin_set_price_start(update: Update, context: ContextTypes.DEFAULT_TY
 
     keyboard = []
     for s_key, s_data in PREDEFINED_SERVICES.items():
-        btn_text = f"{s_data['flag']} {s_data['country_name']} (Cur: ${s_data['selling_price']})"
-        keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"setpr_{s_key}")])
+        btn_text = "{} {} (Cur: ${})".format(s_data['flag'], s_data['country_name'], s_data['selling_price'])
+        keyboard.append([InlineKeyboardButton(btn_text, callback_data="setpr_" + str(s_key))])
 
     keyboard.append([InlineKeyboardButton("❌ Cancel", callback_data="admin_cancel")])
     await update.message.reply_text("💰 **Kon service-er custom price set korte chan select korun:**", reply_markup=InlineKeyboardMarkup(keyboard))
@@ -383,7 +380,8 @@ async def admin_price_service_selected(update: Update, context: ContextTypes.DEF
     context.user_data['selected_service_key'] = s_key
     s_data = PREDEFINED_SERVICES[s_key]
 
-    await query.edit_message_text(f"📝 **{s_data['flag']} {s_data['country_name']}** -er jonno new selling price ($) type korun:")
+    msg = "📝 **{} {}** -er jonno new selling price ($) type korun:".format(s_data['flag'], s_data['country_name'])
+    await query.edit_message_text(msg, parse_mode="Markdown")
     return WAITING_NEW_PRICE
 
 async def admin_save_new_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -394,7 +392,8 @@ async def admin_save_new_price(update: Update, context: ContextTypes.DEFAULT_TYP
         PREDEFINED_SERVICES[s_key]['selling_price'] = new_price
         s_data = PREDEFINED_SERVICES[s_key]
 
-        await update.message.reply_text(f"✅ Price Updated!\n\n{s_data['flag']} **{s_data['country_name']}** Custom Price set to: **${new_price:.3f}**", parse_mode="Markdown")
+        msg = "✅ Price Updated!\n\n{} **{}** Custom Price set to: **${:.3f}**".format(s_data['flag'], s_data['country_name'], new_price)
+        await update.message.reply_text(msg, parse_mode="Markdown")
     except ValueError:
         await update.message.reply_text("❌ Shothik songkha likhun. Example: 0.15")
         return WAITING_NEW_PRICE
@@ -413,7 +412,8 @@ async def admin_ban_submit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         target_id = int(update.message.text.strip())
         if target_id in users:
             users[target_id]['is_banned'] = True
-            await update.message.reply_text(f"✅ User `{target_id}` ban kora hoyeche.", parse_mode="Markdown")
+            msg = "✅ User `{}` ban kora hoyeche.".format(target_id)
+            await update.message.reply_text(msg, parse_mode="Markdown")
         else:
             await update.message.reply_text("❌ User ID pawa jayni.")
     except ValueError:
@@ -430,7 +430,8 @@ async def admin_unban_submit(update: Update, context: ContextTypes.DEFAULT_TYPE)
         target_id = int(update.message.text.strip())
         if target_id in users:
             users[target_id]['is_banned'] = False
-            await update.message.reply_text(f"✅ User `{target_id}` unban kora hoyeche.", parse_mode="Markdown")
+            msg = "✅ User `{}` unban kora hoyeche.".format(target_id)
+            await update.message.reply_text(msg, parse_mode="Markdown")
         else:
             await update.message.reply_text("❌ User ID pawa jayni.")
     except ValueError:
@@ -447,11 +448,13 @@ async def admin_broadcast_submit(update: Update, context: ContextTypes.DEFAULT_T
     count = 0
     for uid in users.keys():
         try:
-            await context.bot.send_message(chat_id=uid, text=f"📢 **Notification:**\n\n{msg}", parse_mode="Markdown")
+            b_msg = "📢 **Notification:**\n\n{}".format(msg)
+            await context.bot.send_message(chat_id=uid, text=b_msg, parse_mode="Markdown")
             count += 1
         except Exception:
             pass
-    await update.message.reply_text(f"✅ Broadcast success! `{count}` jon user message peyeche.", parse_mode="Markdown")
+    res_msg = "✅ Broadcast success! `{}` jon user message peyeche.".format(count)
+    await update.message.reply_text(res_msg, parse_mode="Markdown")
     return ConversationHandler.END
 
 # ----------------- BINANCE DEPOSIT FLOW -----------------
@@ -462,6 +465,7 @@ async def deposit_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("🔙 Cancel", callback_data="dep_cancel")]
     ]
     await update.message.reply_text("💳 **Kon payment method diye deposit korte chan?**", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+    return WAITING_DEPOSIT_AMOUNT
 
 async def deposit_method_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -652,5 +656,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu)$"), handle_user_menu))
 
-    print("🤖 Bot is running smoothly with Admin Panel features...")
+    print("🤖 Bot is running smoothly...")
     app.run_polling(drop_pending_updates=True)

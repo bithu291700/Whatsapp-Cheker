@@ -1,4 +1,4 @@
-const { 
+         const { 
     default: makeWASocket, 
     useMultiFileAuthState, 
     DisconnectReason, 
@@ -75,13 +75,15 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
     const waSock = makeWASocket({
         logger: pino({ level: 'fatal' }),
         printQRInTerminal: false,
-        // Current WhatsApp Official Web Browser Signature
-        browser: ['Mac OS', 'Chrome', '121.0.0.0'],
+        // Official macOS Browser Signature fixes 'Logging in...' hang
+        browser: Browsers.macOS('Desktop'),
         auth: {
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }))
         },
         markOnlineOnConnect: true,
+        generateHighQualityLinkPreview: false,
+        syncFullHistory: false, // Prevents login timeout while syncing chat history
         connectTimeoutMs: 60000,
         keepAliveIntervalMs: 25000
     });
@@ -93,14 +95,11 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
     waSock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
 
-        // Force Pairing Code Trigger
         if (phoneToPair && !codeRequested && !waSock.authState.creds.registered) {
             codeRequested = true;
             try {
-                // Wait for socket handshake initialization
                 await new Promise(r => setTimeout(r, 2000));
                 
-                // Clean input phone string to pure digits
                 const cleanPhone = phoneToPair.toString().replace(/[^0-9]/g, '');
                 let code = await waSock.requestPairingCode(cleanPhone);
                 code = code?.match(/.{1,4}/g)?.join("-") || code;
@@ -115,7 +114,7 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
                 });
             } catch (err) {
                 console.error("Pairing Request Error:", err);
-                bot.sendMessage(chatId, "❌ Pairing Fail! Valid Country code সহ number diyen.", { reply_markup: getMainReplyKeyboard() });
+                bot.sendMessage(chatId, "❌ Pairing Fail! Country code সহ valid number diyen.", { reply_markup: getMainReplyKeyboard() });
             }
         }
 
@@ -265,4 +264,3 @@ bot.on('message', async (msg) => {
         }
     }
 });
-                               

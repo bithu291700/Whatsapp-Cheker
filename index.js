@@ -87,14 +87,15 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
         version,
         logger: pino({ level: 'fatal' }),
         printQRInTerminal: false,
-        browser: Browsers.ubuntu('Chrome'),
+        browser: Browsers.macOS('Desktop'),
         auth: {
             creds: state.creds,
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }))
         },
         markOnlineOnConnect: true,
-        connectTimeoutMs: 60000,
-        keepAliveIntervalMs: 15000
+        connectTimeoutMs: 120000,
+        defaultQueryTimeoutMs: 0,
+        keepAliveIntervalMs: 30000
     });
 
     waSock.ev.on('creds.update', saveCreds);
@@ -104,27 +105,28 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
     waSock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
 
-        // Waiting for socket initialization before requesting pairing code
         if (qr && phoneToPair && !codeRequested && !waSock.authState.creds.registered) {
             codeRequested = true;
             try {
+                // Short wait to ensure socket handshaking is live
+                await new Promise((res) => setTimeout(res, 2000));
                 let code = await waSock.requestPairingCode(phoneToPair);
                 code = code?.match(/.{1,4}/g)?.join("-") || code;
 
-                bot.sendMessage(chatId, `🔑 **Pairing Code:** \`${code}\`\n\n👉 WhatsApp > Linked Devices > Link with Phone Number Instead-e giye code din!`, {
+                bot.sendMessage(chatId, `🔑 **Pairing Code:** \`${code}\`\n\n👉 Apnar Phone-er **WhatsApp > Linked Devices > Link with Phone Number Instead**-e giye code-ti fast bosiye din!`, {
                     parse_mode: "Markdown",
                     reply_markup: getMainReplyKeyboard()
                 });
             } catch (err) {
                 console.error("Pairing Request Error:", err);
-                bot.sendMessage(chatId, "❌ Pairing Fail! Phone number-e country code sho exact number diyen.", { reply_markup: getMainReplyKeyboard() });
+                bot.sendMessage(chatId, "❌ Pairing Fail! Country code সহ exact number diyen.", { reply_markup: getMainReplyKeyboard() });
             }
         }
 
         if (connection === 'open') {
             if (!connectionNotified[chatId]) {
                 connectionNotified[chatId] = true;
-                bot.sendMessage(chatId, "🎉 **WhatsApp Connected Successfully!**\n\nEhbar **📱 Check Number** use korte parben.", {
+                bot.sendMessage(chatId, "🎉 **WhatsApp Connected Successfully!**\n\nEhbar **📱 Check Number** option use koren.", {
                     parse_mode: "Markdown",
                     reply_markup: getMainReplyKeyboard()
                 });
@@ -176,7 +178,7 @@ bot.on('message', async (msg) => {
 
     if (text === "🔢 Pair via Code") {
         userStates[chatId] = "WAITING_FOR_LINK_NUMBER";
-        return bot.sendMessage(chatId, "📲 WhatsApp Number (With Country Code, e.g., `8801700000000`):", { parse_mode: "Markdown" });
+        return bot.sendMessage(chatId, "📲 WhatsApp Number (Country code সহ, e.g. `8801700000000`):", { parse_mode: "Markdown" });
     } 
     
     if (text === "📱 Check Number") {

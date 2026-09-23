@@ -71,32 +71,35 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
 
     const waSock = makeWASocket({
-        logger: pino({ level: 'fatal' }),
-        browser: Browsers.ubuntu('Chrome'),
+        logger: pino({ level: 'info' }), // Detailed logs viewable on Railway
+        browser: ['Ubuntu', 'Chrome', '20.0.04'],
         auth: {
             creds: state.creds,
-            keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'fatal' }))
+            keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'info' }))
         },
-        markOnlineOnConnect: false,
-        syncFullHistory: false
+        markOnlineOnConnect: true,
+        generateHighQualityLinkPreview: false,
+        syncFullHistory: false,
+        retryRequestOnRetry: true
     });
 
     waSock.ev.on('creds.update', saveCreds);
 
     let codeRequested = false;
 
-    // Correct Baileys Pairing Code Pattern: Trigger requestPairingCode on 'qr' event
     waSock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
 
-        if (phoneToPair && qr && !codeRequested && !waSock.authState.creds.registered) {
+        if (phoneToPair && !codeRequested && !waSock.authState.creds.registered) {
             codeRequested = true;
             try {
+                await new Promise(r => setTimeout(r, 3000));
+                
                 const cleanPhone = phoneToPair.toString().replace(/[^0-9]/g, '');
                 let code = await waSock.requestPairingCode(cleanPhone);
                 code = code?.match(/.{1,4}/g)?.join("-") || code;
 
-                bot.sendMessage(chatId, `🔑 **Pairing Code:** \`${code}\`\n\n👉 Apnar WhatsApp-er **Linked Devices > Link with Phone Number Instead**-e giye ekhon code-ti bosiye din!`, {
+                bot.sendMessage(chatId, `🔑 **Pairing Code:** \`${code}\`\n\n👉 Apnar WhatsApp-er **Linked Devices > Link with Phone Number Instead**-e code-ti bosiye din!`, {
                     parse_mode: "Markdown",
                     reply_markup: {
                         inline_keyboard: [
@@ -106,7 +109,7 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
                 });
             } catch (err) {
                 console.error("Pairing Request Error:", err);
-                bot.sendMessage(chatId, "❌ Pairing Request Failed! Abar try koren.", { reply_markup: getMainReplyKeyboard() });
+                bot.sendMessage(chatId, "❌ Pairing Fail! Abar try koren.", { reply_markup: getMainReplyKeyboard() });
             }
         }
 

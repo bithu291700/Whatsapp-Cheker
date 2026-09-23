@@ -1,3 +1,9 @@
+// Fix for 'ReferenceError: crypto is not defined' in Baileys
+const crypto = require('crypto');
+if (!global.crypto) {
+    global.crypto = crypto;
+}
+
 const { 
     default: makeWASocket, 
     useMultiFileAuthState, 
@@ -20,6 +26,7 @@ if (!TELEGRAM_TOKEN) {
     process.exit(1);
 }
 
+// Web Server for Railway
 const app = express();
 const PORT = process.env.PORT || 8080;
 app.get('/', (req, res) => res.status(200).send('WhatsApp Bot Active!'));
@@ -71,7 +78,7 @@ async function createWhatsAppConnection(chatId, phoneToPair = null) {
     const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
 
     const waSock = makeWASocket({
-        logger: pino({ level: 'info' }), // Detailed logs viewable on Railway
+        logger: pino({ level: 'info' }),
         browser: ['Ubuntu', 'Chrome', '20.0.04'],
         auth: {
             creds: state.creds,
@@ -255,3 +262,4 @@ bot.on('message', async (msg) => {
         }
     }
 });
+                            

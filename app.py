@@ -91,7 +91,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     is_admin = (user_id == ADMIN_ID)
-    msg = f"👋 **হ্যালো {name}!**\n\nস্বাগতম আমাদের সার্ভিস বোটে।"
+    msg = "👋 **হ্যালো {}!**\n\nস্বাগতম আমাদের সার্ভিস বোটে।".format(name)
     await update.message.reply_text(msg, reply_markup=get_main_keyboard(is_admin=is_admin), parse_mode="Markdown")
 
 # ----------------- USER MENU HANDLERS -----------------
@@ -119,28 +119,25 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             total_user_bal = sum(u["balance"] for u in users.values())
             msg = (
-                f"💳 **অ্যাডমিন অ্যাকাউন্ট ব্যালেন্স & ইনফো:**\n\n"
-                f"🌐 **SMS Bower API Balance:** ${sms_bal}\n"
-                f"👥 **Total Bot Users:** {len(users)}\n"
-                f"💰 **Total User Balances:** ${total_user_bal:.2f}"
-            )
+                "💳 **অ্যাডমিন অ্যাকাউন্ট ব্যালেন্স & ইনফো:**\n\n"
+                "🌐 **SMS Bower API Balance:** ${}\n"
+                "👥 **Total Bot Users:** {}\n"
+                "💰 **Total User Balances:** ${:.2f}"
+            ).format(sms_bal, len(users), total_user_bal)
         else:
-            bal_val = user['balance']
-            msg = f"💳 **আপনার বর্তমান ব্যালেন্স:** ${bal_val:.2f}"
+            msg = "💳 **আপনার বর্তমান ব্যালেন্স:** ${:.2f}".format(user['balance'])
         
         await update.message.reply_text(msg, parse_mode="Markdown")
 
     # 2. PROFILE
     elif text == "👤 Profile":
-        bal_val = user['balance']
-        total_otp_val = user['total_otp']
         msg = (
-            f"👤 **ইউজার প্রোফাইল**\n\n"
-            f"🆔 ID: `{user_id}`\n"
-            f"👤 Name: {user['name']}\n"
-            f"💰 Balance: **${bal_val:.2f}**\n"
-            f"📩 Total OTP Received: **{total_otp_val}**"
-        )
+            "👤 **ইউজার প্রোফাইল**\n\n"
+            "🆔 ID: `{}`\n"
+            "👤 Name: {}\n"
+            "💰 Balance: **${:.2f}**\n"
+            "📩 Total OTP Received: **{}**"
+        ).format(user_id, user['name'], user['balance'], user['total_otp'])
         await update.message.reply_text(msg, parse_mode="Markdown")
 
     # 3. ADMIN PANEL
@@ -156,19 +153,15 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if user_id in active_orders:
             order = active_orders[user_id]
             keyboard = [
-                [InlineKeyboardButton("🔄 Check OTP", callback_data=f"chk_otp_{user_id}")],
-                [InlineKeyboardButton("❌ Cancel Order", callback_data=f"cancel_ord_{user_id}")]
+                [InlineKeyboardButton("🔄 Check OTP", callback_data="chk_otp_" + str(user_id))],
+                [InlineKeyboardButton("❌ Cancel Order", callback_data="cancel_ord_" + str(user_id))]
             ]
-            s_name = order['service_name']
-            c_flag = order['flag']
-            c_name = order['country_name']
-            p_num = order['phone']
             msg = (
-                f"📌 **আপনার একটি নাম্বার অ্যাক্টিভ আছে!**\n\n"
-                f"🔹 Service: **{s_name}**\n"
-                f"{c_flag} Country: **{c_name}**\n"
-                f"📞 Number: `{p_num}`"
-            )
+                "📌 **আপনার একটি নাম্বার অ্যাক্টিভ আছে!**\n\n"
+                "🔹 Service: **{}**\n"
+                "{} Country: **{}**\n"
+                "📞 Number: `{}`"
+            ).format(order['service_name'], order['flag'], order['country_name'], order['phone'])
             await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
             return
 
@@ -178,12 +171,8 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         keyboard = []
         for key, s_data in services.items():
-            c_flag = s_data['flag']
-            c_name = s_data['country_name']
-            s_name = s_data['service_name']
-            c_price = s_data['custom_price']
-            btn_text = f"{c_flag} {c_name} - {s_name} (${c_price:.2f})"
-            keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"buynum_{key}")])
+            btn_text = "{} {} - {} (${:.2f})".format(s_data['flag'], s_data['country_name'], s_data['service_name'], s_data['custom_price'])
+            keyboard.append([InlineKeyboardButton(btn_text, callback_data="buynum_" + str(key))])
 
         await update.message.reply_text("🛒 **একটি সার্ভিস সিলেক্ট করুন:**", reply_markup=InlineKeyboardMarkup(keyboard))
 
@@ -217,23 +206,21 @@ async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_T
                     cost = float(res[cid][code].get("cost", 0))
                     count = res[cid][code].get("count", 0)
                     
-                    s_key = f"{code}_{cid}"
+                    s_key = "{}_{}".format(code, cid)
                     status = "✅ Added" if s_key in services else "➕ Add"
                     
-                    c_flag = cinfo['flag']
-                    c_name = cinfo['name']
-                    btn_text = f"{c_flag} {c_name} - {service_name} (${cost}) [Stock: {count}] [{status}]"
-                    keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"save_s_{s_key}_{cost}")])
+                    btn_text = "{} {} - {} (${}) [Stock: {}] [{}]".format(cinfo['flag'], cinfo['name'], service_name, cost, count, status)
+                    cb_data = "save_s_{}_{}".format(s_key, cost)
+                    keyboard.append([InlineKeyboardButton(btn_text, callback_data=cb_data)])
 
             if not keyboard:
                 await query.edit_message_text("❌ কোনো কান্ট্রি/স্টক পাওয়া যায়নি।")
                 return
 
-            await query.edit_message_text(f"🌐 **{service_name} এর A to Z কান্ট্রি লিস্ট (Stock & Price সহ):**", reply_markup=InlineKeyboardMarkup(keyboard))
+            await query.edit_message_text("🌐 **{} এর A to Z কান্ট্রি লিস্ট (Stock & Price সহ):**".format(service_name), reply_markup=InlineKeyboardMarkup(keyboard))
 
         except Exception as err:
-            err_str = str(err)
-            await query.edit_message_text(f"❌ API data fetch error: {err_str}")
+            await query.edit_message_text("❌ API data fetch error: " + str(err))
 
 async def handle_save_service(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -246,7 +233,7 @@ async def handle_save_service(update: Update, context: ContextTypes.DEFAULT_TYPE
         cid = parts[3]
         cost = float(parts[4])
 
-        s_key = f"{code}_{cid}"
+        s_key = "{}_{}".format(code, cid)
         cinfo = COUNTRY_MAP.get(cid, {"name": "Unknown", "flag": "🏳️"})
         service_name = "Telegram" if code == "tg" else "WhatsApp"
 
@@ -264,11 +251,12 @@ async def handle_save_service(update: Update, context: ContextTypes.DEFAULT_TYPE
             "max_price": max_limit
         }
 
-        c_flag = cinfo['flag']
-        c_name = cinfo['name']
-        
-        # FIXED: Removed inline math calculations inside f-string formatting
-        msg = f"✅ **{c_flag} {c_name} - {service_name}** অ্যাড করা হয়েছে!\n💵 Cost: ${cost:.2f} | Selling Price: ${selling_price:.2f} \vert{} Max Limit:${max_limit:.2f}"
+        # SAFE FORMATTING WITHOUT F-STRING SYNTAX ISSUES
+        msg = (
+            "✅ **{} {} - {}** অ্যাড করা হয়েছে!\n"
+            "💵 Cost: ${:.2f} | Selling Price: ${:.2f} \vert{} Max Limit:${:.2f}"
+        ).format(cinfo['flag'], cinfo['name'], service_name, cost, selling_price, max_limit)
+
         await query.edit_message_text(msg, parse_mode="Markdown")
 
 # ----------------- BUY NUMBER & OTP FLOW -----------------
@@ -294,18 +282,16 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             p_res = requests.get(SMSBOWER_URL, params={"api_key": SMSBOWER_API_KEY, "action": "getPrices", "service": s_data['service_code'], "country": s_data['country_id']}, timeout=5).json()
             current_api_cost = float(p_res.get(s_data['country_id'], {}).get(s_data['service_code'], {}).get("cost", 999))
             
-            max_p = s_data['max_price']
-            if current_api_cost > max_p:
-                msg_limit = f"⚠️ **দাম বেশি হওয়ার কারণে ব্লক করা হয়েছে!**\nAPI Cost: ${current_api_cost:.2f}, Max Allowed:${max_p:.2f}"
+            if current_api_cost > s_data['max_price']:
+                msg_limit = "⚠️ **দাম বেশি হওয়ার কারণে ব্লক করা হয়েছে!**\nAPI Cost: ${:.2f}, Max Allowed:${:.2f}".format(current_api_cost, s_data['max_price'])
                 await query.edit_message_text(msg_limit, parse_mode="Markdown")
                 return
         except Exception:
             pass
 
         price = s_data['custom_price']
-        u_bal = user['balance']
-        if u_bal < price:
-            msg_bal = f"❌ পর্যাপ্ত ব্যালেন্স নেই! প্রয়োজন: ${price:.2f}, আছে: ${u_bal:.2f}"
+        if user['balance'] < price:
+            msg_bal = "❌ পর্যাপ্ত ব্যালেন্স নেই! প্রয়োজন: ${:.2f}, আছে: ${:.2f}".format(price, user['balance'])
             await query.edit_message_text(msg_bal)
             return
 
@@ -336,28 +322,23 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 }
 
                 keyboard = [
-                    [InlineKeyboardButton("🔄 Check OTP", callback_data=f"chk_otp_{user_id}")],
-                    [InlineKeyboardButton("❌ Cancel Order", callback_data=f"cancel_ord_{user_id}")]
+                    [InlineKeyboardButton("🔄 Check OTP", callback_data="chk_otp_" + str(user_id))],
+                    [InlineKeyboardButton("❌ Cancel Order", callback_data="cancel_ord_" + str(user_id))]
                 ]
 
-                s_name = s_data['service_name']
-                c_flag = s_data['flag']
-                c_name = s_data['country_name']
-
                 msg = (
-                    f"🏷 **Service:** {s_name}\n"
-                    f"{c_flag} **Country:** {c_name}\n"
-                    f"📞 **Number:** `{phone}`\n"
-                    f"💵 **Rate:** ${price:.2f}\n\n"
-                    f"⚠️ OTP না আসা পর্যন্ত অপেক্ষা করুন..."
-                )
+                    "🏷 **Service:** {}\n"
+                    "{} **Country:** {}\n"
+                    "📞 **Number:** `{}`\n"
+                    "💵 **Rate:** ${:.2f}\n\n"
+                    "⚠️ OTP না আসা পর্যন্ত অপেক্ষা করুন..."
+                ).format(s_data['service_name'], s_data['flag'], s_data['country_name'], phone, price)
                 await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
             else:
-                msg_err = f"❌ নাম্বার পাওয়া যায়নি (Stock Empty)। API: {res}"
+                msg_err = "❌ নাম্বার পাওয়া যায়নি (Stock Empty)। API: " + str(res)
                 await query.edit_message_text(msg_err)
         except Exception as e:
-            err_msg = str(e)
-            msg_ex = f"❌ API ত্রুটি: {err_msg}"
+            msg_ex = "❌ API ত্রুটি: " + str(e)
             await query.edit_message_text(msg_ex)
 
     elif data.startswith("chk_otp_"):
@@ -372,21 +353,18 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             user['total_otp'] += 1
             traffic_log.append({"timestamp": datetime.now(), "service_name": order['service_name'], "country_name": order['country_name']})
 
-            s_name = order['service_name']
-            p_num = order['phone']
-
             msg = (
-                f"🎉 **OTP Received!**\n\n"
-                f"🏷 Service: {s_name}\n"
-                f"📞 Number: `{p_num}`\n"
-                f"💬 **OTP:** `{otp_code}`"
-            )
+                "🎉 **OTP Received!**\n\n"
+                "🏷 Service: {}\n"
+                "📞 Number: `{}`\n"
+                "💬 **OTP:** `{}`"
+            ).format(order['service_name'], order['phone'], otp_code)
             del active_orders[user_id]
             await query.edit_message_text(msg, parse_mode="Markdown")
         elif "STATUS_WAIT_CODE" in res:
             await query.answer("⏳ এখনও OTP আসেনি, আবার চেষ্টা করুন...", show_alert=True)
         else:
-            await query.answer(f"Status: {res}", show_alert=True)
+            await query.answer("Status: " + str(res), show_alert=True)
 
     elif data.startswith("cancel_ord_"):
         order = active_orders.get(user_id)

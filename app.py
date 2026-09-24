@@ -40,7 +40,7 @@ WAITING_NEW_PRICE = 8
 # IN-MEMORY ACTIVE ORDERS
 active_orders = {}  # {user_id: {activation_id, phone, service_name, country_name, flag, price}}
 
-# PREDEFINED SERVICES WITH MULTIPLE OPERATORS SUPPORT
+# PREDEFINED SERVICES (Strict Max Price & Admin Selling Price)
 PREDEFINED_SERVICES = {
     "wa_usa_cellular": {
         "service_code": "wa", 
@@ -166,7 +166,7 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"🆔 ID: `{user_id}`\n"
             f"👤 Name: {user.get('name')}\n"
             f"💰 Balance: **${user.get('balance', 0.0):.2f}**\n"
-            f"📩 Total OTP Received: **{user.get('total_otp', 0)}**"
+            f"📩 Total OTP Received: **${user.get('total_otp', 0)}**"
         )
         await update.message.reply_text(msg, parse_mode="Markdown")
 
@@ -224,7 +224,7 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🔙 Main Menu":
         await start(update, context)
 
-# ----------------- BUY NUMBER FLOW WITH STRICT PRICING & STOCK CHECK -----------------
+# ----------------- BUY NUMBER FLOW (STRICT MAX PRICE CHECK & ADMIN SELLING PRICE DEDUCTION) -----------------
 
 async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -252,8 +252,8 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("❌ Service pawa jayni.")
             return
 
-        # API theke current market price check kora
-        real_price = s_data['selling_price']
+        # 1. API theke actual market price check kora (shudhu dekhar jonno je price limit-er modhye ache kina)
+        market_price = s_data['max_price']
         try:
             p_params = {
                 "api_key": SMSBOWER_API_KEY,
@@ -262,28 +262,29 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "country": s_data['country_id']
             }
             p_res = requests.get(SMSBOWER_URL, params=p_params, timeout=5).json()
-            real_price = float(p_res.get(s_data['country_id'], {}).get(s_data['service_code'], {}).get("cost", s_data['selling_price']))
+            market_price = float(p_res.get(s_data['country_id'], {}).get(s_data['service_code'], {}).get("cost", s_data['max_price']))
         except Exception:
             pass
 
-        # STRICT CHECK: Jodi price max_price er beshi hoy, tahole stock out / buy korbe na
-        if real_price > s_data['max_price']:
+        # STRICT CHECK: Jodi market price nirdharito max_price er cheye beshi hoy, tahole stock out dekhabe ar kinbe na
+        if market_price > s_data['max_price']:
             err_msg = (
-                f"⚠️ **Stock Out / Price High!**\n"
-                f"Required Max Limit: **${s_data['max_price']:.3f}**\n"
-                f"Current Market Price: **${real_price:.3f}**\n\n"
-                f"❌ বর্তমান রেート বেশি থাকায় বা স্টক না থাকায় নাম্বার কেনa সম্ভব হলো না (Stock Out)।"
+                f"⚠️ **Stock Out!**\n\n"
+                f"❌ বর্তমান রেট বেশি থাকায় বা স্টক না থাকায় নাম্বার কেনা সম্ভব হলো না।"
             )
             await query.edit_message_text(err_msg, parse_mode="Markdown")
             return
 
+        # User-er balance theke katbe shudhu ADMIN-er nirdharito selling_price (website price-er sathe er kono somporko nei)
+        charge_price = s_data['selling_price']
         user_balance = user.get('balance', 0.0)
-        if user_balance < real_price:
-            msg_bal = f"❌ Porjapto balance nei! Proyojon: ${real_price:.3f}, Apnar Balance:${user_balance:.2f}"
+
+        if user_balance < charge_price:
+            msg_bal = f"❌ Porjapto balance nei! Proyojon: ${charge_price:.3f}, Apnar Balance:${user_balance:.2f}"
             await query.edit_message_text(msg_bal)
             return
 
-        # Try buying number with available operators list if applicable
+        # Try buying number using operators list
         bought_success = False
         res = ""
         act_id = ""
@@ -314,7 +315,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 continue
 
         if bought_success:
-            new_balance = user_balance - real_price
+            new_balance = user_balance - charge_price
             update_user_field(user_id, {"balance": new_balance})
             service_name = "WhatsApp"
 
@@ -324,7 +325,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "service_name": service_name,
                 "country_name": s_data['country_name'],
                 "flag": s_data['flag'],
-                "price": real_price
+                "price": charge_price
             }
 
             keyboard = [
@@ -337,13 +338,13 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"🏷 **Service:** {service_name}{op_text}\n"
                 f"{s_data['flag']} **Country:** {s_data['country_name']}\n"
                 f"📞 **Number:** `{phone}`\n"
-                f"💵 **Rate Deducted:** ${real_price:.3f}\n\n"
+                f"💵 **Rate Deducted:** ${charge_price:.3f}\n\n"
                 f"⚠️ OTP na asha porjonto opekkha korun..."
             )
             await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
         else:
-            msg_err = f"❌ Stock Out! Kono sothik number ba stock pawa jayni. API Response: {res}"
-            await query.edit_message_text(msg_err)
+            msg_err = f"⚠️ **Stock Out!**\n\n❌ এই মুহূর্তে কোনো নাম্বার স্টক নেই।"
+            await query.edit_message_text(msg_err, parse_mode="Markdown")
 
     elif data.startswith("chk_otp_"):
         order = active_orders.get(user_id)
@@ -420,6 +421,7 @@ async def admin_save_new_price(update: Update, context: ContextTypes.DEFAULT_TYP
         new_price = float(update.message.text.strip())
         s_key = context.user_data['selected_service_key']
         
+        # Admin set price update hobe, ebong eta max_price hishebeo kaj korbe jate tar besi te na kine
         PREDEFINED_SERVICES[s_key]['selling_price'] = new_price
         PREDEFINED_SERVICES[s_key]['max_price'] = new_price
         s_data = PREDEFINED_SERVICES[s_key]
@@ -692,5 +694,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu)$"), handle_user_menu))
 
-    print("🤖 Bot running with MongoDB connected and USA, Afghanistan, Madagascar WhatsApp services configured!")
+    print("🤖 Bot running successfully with independent Admin Selling Price & Strict Max Price Stock-out check!")
     app.run_polling(drop_pending_updates=True)

@@ -33,10 +33,10 @@ active_orders = {}  # {user_id: {activation_id, phone, service_name, country_nam
 deposits = {}       # {deposit_id: {user_id, amount, trx_id, photo_id, status}}
 traffic_log = []    # [{timestamp, service_name, country_name}]
 
-# PREDEFINED SERVICES
+# PREDEFINED SERVICES (Updated with USA Virtual 0.12 rate & operator 2262)
 PREDEFINED_SERVICES = {
     # WhatsApp Services
-    "wa_usa_1": {"service_code": "wa", "country_id": "187", "country_name": "USA Virtual (Tier 1)", "flag": "🇺🇸", "max_price": 0.120, "selling_price": 0.120},
+    "wa_usa_1": {"service_code": "wa", "country_id": "187", "operator": "2262", "country_name": "USA Virtual (0.12$)", "flag": "🇺🇸", "max_price": 0.120, "selling_price": 0.120},[cite: 6, 7]
     "wa_usa_2": {"service_code": "wa", "country_id": "187", "country_name": "USA Virtual (Tier 2)", "flag": "🇺🇸", "max_price": 0.134, "selling_price": 0.134},
     "wa_iraq_1": {"service_code": "wa", "country_id": "185", "country_name": "Iraq (Tier 1)", "flag": "🇮🇶", "max_price": 0.151, "selling_price": 0.151},
     "wa_iraq_2": {"service_code": "wa", "country_id": "185", "country_name": "Iraq (Tier 2)", "flag": "🇮🇶", "max_price": 0.163, "selling_price": 0.163},
@@ -251,7 +251,6 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("❌ Service pawa jayni.")
             return
 
-        # ১. getPricesV3 দিয়ে রিয়েল-টাইম দাম চেক করা
         real_price = s_data['selling_price']
         try:
             p_params = {
@@ -265,18 +264,16 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
 
-        # ২. স্ট্রিক্ট লিমিট চেক: আসল দাম যদি আপনার max_price-এর বেশি হয়, তবে কেনা হবে না!
         if real_price > s_data['max_price']:
             err_msg = (
                 "⚠️ **Price Too High!**\n"
                 "Current Market Price: **${:.3f}**\n"
                 "Your Max Limit: **${:.3f}**\n\n"
-                "দাম বেশি থাকায় বট নাম্বার কেনা বাতিল করেছে।"
+                "দাম বেশি থাকায় বট নাম্বার কেনা বাতিল করেছে।"
             ).format(real_price, s_data['max_price'])
             await query.edit_message_text(err_msg, parse_mode="Markdown")
             return
 
-        # ৩. ব্যালেন্স চেক (আসল রিয়েল প্রাইস অনুযায়ী)
         if user['balance'] < real_price:
             msg_bal = "❌ Porjapto balance nei! Proyojon: ${:.3f}, ache:${:.2f}".format(real_price, user['balance'])
             await query.edit_message_text(msg_bal)
@@ -288,6 +285,10 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "service": s_data['service_code'],
             "country": s_data['country_id']
         }
+        
+        # Jodi operator define kora thake tahole ta request-e add hobe (jemon 0.12 er operator 2262)
+        if "operator" in s_data:
+            params["operator"] = s_data["operator"]
 
         try:
             res = requests.get(SMSBOWER_URL, params=params, timeout=10).text
@@ -296,7 +297,6 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 act_id = parts[1]
                 phone = parts[2]
 
-                # ইউজারের ব্যালেন্স থেকে আসল রিয়েল দামটাই কাটা হবে
                 user['balance'] -= real_price
 
                 service_name = "WhatsApp" if s_data['service_code'] == "wa" else "Telegram"
@@ -671,5 +671,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu)$"), handle_user_menu))
 
-    print("🤖 Bot running smoothly with strict V3 Price Check protection...")
+    print("🤖 Bot running smoothly with 0.12 rate for USA Virtual & operator 2262...")
     app.run_polling(drop_pending_updates=True)

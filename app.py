@@ -33,7 +33,7 @@ active_orders = {}  # {user_id: {activation_id, phone, service_name, country_nam
 deposits = {}       # {deposit_id: {user_id, amount, trx_id, photo_id, status}}
 traffic_log = []    # [{timestamp, service_name, country_name}]
 
-# STRICT MAX PRICE LIMIT SERVICES (0.12 - 0.14 STRICT RANGE)
+# PREDEFINED SERVICES
 PREDEFINED_SERVICES = {
     # WhatsApp Services
     "wa_usa_1": {"service_code": "wa", "country_id": "187", "country_name": "USA Virtual (Tier 1)", "flag": "🇺🇸", "max_price": 0.120, "selling_price": 0.120},
@@ -257,22 +257,6 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             msg_bal = "❌ Porjapto balance nei! Proyojon: ${:.3f}, ache:${:.2f}".format(price, user['balance'])
             await query.edit_message_text(msg_bal)
             return
-
-        # LIVE STRICT MAX PRICE FILTER CHECK
-        try:
-            p_res = requests.get(SMSBOWER_URL, params={"api_key": SMSBOWER_API_KEY, "action": "getPrices", "service": s_data['service_code'], "country": s_data['country_id']}, timeout=5).json()
-            current_api_cost = float(p_res.get(s_data['country_id'], {}).get(s_data['service_code'], {}).get("cost", 999))
-            
-            if current_api_cost > s_data['max_price']:
-                msg_limit = (
-                    "⚠️ **Max Price Exceeded!**\n"
-                    "SMS Bower API Cost (${:.3f}) max limit (${:.3f}) er upore.\n"
-                    "Doya kore rate $0.12-$0.14 e ashle abar chesta korun."
-                ).format(current_api_cost, s_data['max_price'])
-                await query.edit_message_text(msg_limit, parse_mode="Markdown")
-                return
-        except Exception:
-            pass
 
         params = {
             "api_key": SMSBOWER_API_KEY,
@@ -661,5 +645,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu)$"), handle_user_menu))
 
-    print("🤖 Bot running with strict max limit safety filters...")
+    print("🤖 Bot running smoothly without price check restriction...")
     app.run_polling(drop_pending_updates=True)

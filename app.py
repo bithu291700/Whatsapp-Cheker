@@ -41,8 +41,6 @@ WAITING_NEW_PRICE = 8
 active_orders = {}  
 
 # PREDEFINED SERVICES 
-# max_price = jeitar upore market gele ar kinbe na (Stock out dekhabe)
-# selling_price = user-er balance theke koto katbe (Admin set price)
 PREDEFINED_SERVICES = {
     "wa_usa_cellular": {
         "service_code": "wa", 
@@ -50,8 +48,8 @@ PREDEFINED_SERVICES = {
         "operators": ["cellular"], 
         "country_name": "USA Virtual (Cellular)", 
         "flag": "🇺🇸", 
-        "max_price": 0.12,    # Eta fixed max limit (er upore gele kinbe na)
-        "selling_price": 0.120 # Eta user theke katar price (Admin change korte parbe)
+        "max_price": 0.120,    # USA max price strictly 0.12 fixed
+        "selling_price": 0.120 
     },
     "wa_afghanistan": {
         "service_code": "wa", 
@@ -226,7 +224,7 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🔙 Main Menu":
         await start(update, context)
 
-# ----------------- BUY NUMBER FLOW (STRICT MAX PRICE CHECK & SEPARATE ADMIN SELLING PRICE) -----------------
+# ----------------- BUY NUMBER FLOW -----------------
 
 async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -268,16 +266,16 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
 
-        # 2. STRICT MAX PRICE LOCK CHECK: Jodi market price fixed max_price er beshi hoy, tahole ar kinbe na, Stock Out dekhabe.
+        # 2. STRICT MAX PRICE LOCK CHECK: USA-er khetre 0.12 ba onnanno country-te tader max_price er upore gele stock out dekhabe
         if market_price > s_data['max_price']:
             err_msg = (
                 f"⚠️ **Stock Out!**\n\n"
-                f"❌ বর্তমান মার্কেট রেট বেশি থাকায় বা স্টক না থাকায় নাম্বার কেনা সম্ভব হলো না (Stock Out)।"
+                f"❌ বর্তমান মার্কেট রেট max limit ($ {s_data['max_price']}) er beshi thakay number kena sombhob holo na."
             )
             await query.edit_message_text(err_msg, parse_mode="Markdown")
             return
 
-        # 3. User balance deduction: Shudhu admin-er set kora selling_price katbe (market price-er sathe er kono somporko nei)
+        # 3. User balance deduction: Shudhu admin-er set kora selling_price katbe
         charge_price = s_data['selling_price']
         user_balance = user.get('balance', 0.0)
 
@@ -345,7 +343,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
         else:
-            msg_err = f"⚠️ **Stock Out!**\n\n❌ এই মুহূর্তে কোনো নাম্বার স্টক নেই।"
+            msg_err = f"⚠️ **Stock Out!**\n\n❌ Ei muhurte kono number stock-e nei."
             await query.edit_message_text(msg_err, parse_mode="Markdown")
 
     elif data.startswith("chk_otp_"):
@@ -414,7 +412,7 @@ async def admin_price_service_selected(update: Update, context: ContextTypes.DEF
     context.user_data['selected_service_key'] = s_key
     s_data = PREDEFINED_SERVICES[s_key]
 
-    msg = f"📝 **{s_data['flag']} {s_data['country_name']}** -er jonno new selling price ($) type korun (Eta user theke katbe):"
+    msg = f"📝 **{s_data['flag']} {s_data['country_name']}** -er jonno new selling price ($) type korun:"
     await query.edit_message_text(msg, parse_mode="Markdown")
     return WAITING_NEW_PRICE
 
@@ -423,7 +421,6 @@ async def admin_save_new_price(update: Update, context: ContextTypes.DEFAULT_TYP
         new_price = float(update.message.text.strip())
         s_key = context.user_data['selected_service_key']
         
-        # Shudhu selling_price update hobe, max_price (lock limit) okei thakbe!
         PREDEFINED_SERVICES[s_key]['selling_price'] = new_price
         s_data = PREDEFINED_SERVICES[s_key]
 
@@ -493,12 +490,12 @@ async def admin_broadcast_submit(update: Update, context: ContextTypes.DEFAULT_T
     await update.message.reply_text(f"✅ Broadcast success! `{count}` jon user message peyeche.", parse_mode="Markdown")
     return ConversationHandler.END
 
-# ----------------- BINANCE DEPOSIT FLOW -----------------
+# ----------------- BINANCE DEPOSIT FLOW WITH CANCEL BUTTON -----------------
 
 async def deposit_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("🟡 Binance Pay ($1.00 Min)", callback_data="dep_binance")],
-        [InlineKeyboardButton("🔙 Cancel", callback_data="dep_cancel")]
+        [InlineKeyboardButton("❌ Cancel / Back", callback_data="dep_cancel")]
     ]
     await update.message.reply_text("💳 **Kon payment method diye deposit korte chan?**", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
     return WAITING_DEPOSIT_AMOUNT
@@ -508,18 +505,20 @@ async def deposit_method_select(update: Update, context: ContextTypes.DEFAULT_TY
     await query.answer()
 
     if query.data == "dep_cancel":
-        await query.edit_message_text("❌ Deposit batil kora hoyeche.")
+        await query.edit_message_text("❌ Deposit process batil kora hoyeche.")
         return ConversationHandler.END
 
     if query.data == "dep_binance":
-        await query.edit_message_text("💵 **Koto dollar deposit korte chan likhun (Minimum $1.00):**")
+        keyboard = [[InlineKeyboardButton("❌ Cancel", callback_data="dep_cancel")]]
+        await query.edit_message_text("💵 **Koto dollar deposit korte chan likhun (Minimum $1.00):**", reply_markup=InlineKeyboardMarkup(keyboard))
         return WAITING_DEPOSIT_AMOUNT
 
 async def deposit_amount_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         amount = float(update.message.text.strip())
         if amount < 1.0:
-            await update.message.reply_text("❌ Minimum deposit amount $1.00! Abar amount likhun:")
+            keyboard = [[InlineKeyboardButton("❌ Cancel", callback_data="dep_cancel")]]
+            await update.message.reply_text("❌ Minimum deposit amount $1.00! Abar amount likhun:", reply_markup=InlineKeyboardMarkup(keyboard))
             return WAITING_DEPOSIT_AMOUNT
 
         context.user_data['deposit_amount'] = amount
@@ -531,16 +530,19 @@ async def deposit_amount_received(update: Update, context: ContextTypes.DEFAULT_
             f"⚠️ Send korar por apnar Binance **Order ID / TRX ID**-ti type kore pathan:"
         )
 
-        await update.message.reply_text(msg, parse_mode="Markdown")
+        keyboard = [[InlineKeyboardButton("❌ Cancel", callback_data="dep_cancel")]]
+        await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
         return WAITING_TRX_ID
 
     except ValueError:
-        await update.message.reply_text("❌ Shothik songkha (number) likhun. (Example: 1.5):")
+        keyboard = [[InlineKeyboardButton("❌ Cancel", callback_data="dep_cancel")]]
+        await update.message.reply_text("❌ Shothik songkha (number) likhun. (Example: 1.5):", reply_markup=InlineKeyboardMarkup(keyboard))
         return WAITING_DEPOSIT_AMOUNT
 
 async def deposit_trx_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['trx_id'] = update.message.text.strip()
-    await update.message.reply_text("📸 **Abar apnar Payment Screenshot (Photo)-ti pathan:**")
+    keyboard = [[InlineKeyboardButton("❌ Cancel", callback_data="dep_cancel")]]
+    await update.message.reply_text("📸 **Abar apnar Payment Screenshot (Photo)-ti pathan:**", reply_markup=InlineKeyboardMarkup(keyboard))
     return WAITING_SCREENSHOT
 
 async def deposit_screenshot_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -591,6 +593,14 @@ async def deposit_screenshot_received(update: Update, context: ContextTypes.DEFA
 
     return ConversationHandler.END
 
+# Deposit cancel handler for callback query inside conversation
+async def deposit_cancel_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    if query.data == "dep_cancel":
+        await query.edit_message_text("❌ Deposit process batil kora hoyeche.")
+        return ConversationHandler.END
+
 # ----------------- ADMIN APPROVAL HANDLER -----------------
 
 async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -637,16 +647,23 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
 if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Deposit Conversation Handler
+    # Deposit Conversation Handler with Cancel support
     deposit_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^💳 Deposit$"), deposit_start)],
         states={
             WAITING_DEPOSIT_AMOUNT: [
                 CallbackQueryHandler(deposit_method_select, pattern="^dep_"),
+                CallbackQueryHandler(deposit_cancel_callback, pattern="^dep_cancel$"),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_amount_received)
             ],
-            WAITING_TRX_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_trx_received)],
-            WAITING_SCREENSHOT: [MessageHandler(filters.PHOTO, deposit_screenshot_received)]
+            WAITING_TRX_ID: [
+                CallbackQueryHandler(deposit_cancel_callback, pattern="^dep_cancel$"),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_trx_received)
+            ],
+            WAITING_SCREENSHOT: [
+                CallbackQueryHandler(deposit_cancel_callback, pattern="^dep_cancel$"),
+                MessageHandler(filters.PHOTO, deposit_screenshot_received)
+            ]
         },
         fallbacks=[CommandHandler("start", start)]
     )
@@ -695,5 +712,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully with fixed Max Price Lock and independent Admin Selling Price!")
+    print("🤖 Bot running successfully with fixed USA 0.12 Max Price Lock and Deposit Cancel feature!")
     app.run_polling(drop_pending_updates=True)

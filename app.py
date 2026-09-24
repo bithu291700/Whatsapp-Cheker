@@ -45,8 +45,8 @@ PREDEFINED_SERVICES = {
     "wa_usa_cellular": {
         "service_code": "wa", 
         "country_id": "12", 
-        "operators": ["cellular"], 
-        "country_name": "USA Virtual (Cellular)", 
+        "operators": ["cellular", "any"], 
+        "country_name": "USA Virtual", 
         "flag": "🇺🇸", 
         "max_price": 0.120,    # USA max price strictly 0.12 fixed
         "selling_price": 0.120 
@@ -224,7 +224,7 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🔙 Main Menu":
         await start(update, context)
 
-# ----------------- BUY NUMBER FLOW -----------------
+# ----------------- BUY NUMBER FLOW WITH STRICT MAX PRICE -----------------
 
 async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -252,30 +252,6 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("❌ Service pawa jayni.")
             return
 
-        # 1. API theke actual market price check kora
-        market_price = s_data['max_price']
-        try:
-            p_params = {
-                "api_key": SMSBOWER_API_KEY,
-                "action": "getPricesV3",
-                "service": s_data['service_code'],
-                "country": s_data['country_id']
-            }
-            p_res = requests.get(SMSBOWER_URL, params=p_params, timeout=5).json()
-            market_price = float(p_res.get(s_data['country_id'], {}).get(s_data['service_code'], {}).get("cost", s_data['max_price']))
-        except Exception:
-            pass
-
-        # 2. STRICT MAX PRICE LOCK CHECK: USA-er khetre 0.12 ba onnanno country-te tader max_price er upore gele stock out dekhabe
-        if market_price > s_data['max_price']:
-            err_msg = (
-                f"⚠️ **Stock Out!**\n\n"
-                f"❌ বর্তমান মার্কেট রেট max limit ($ {s_data['max_price']}) er beshi thakay number kena sombhob holo na."
-            )
-            await query.edit_message_text(err_msg, parse_mode="Markdown")
-            return
-
-        # 3. User balance deduction: Shudhu admin-er set kora selling_price katbe
         charge_price = s_data['selling_price']
         user_balance = user.get('balance', 0.0)
 
@@ -284,7 +260,6 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text(msg_bal)
             return
 
-        # Try buying number using operators list
         bought_success = False
         res = ""
         act_id = ""
@@ -297,9 +272,10 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "api_key": SMSBOWER_API_KEY,
                 "action": "getNumber",
                 "service": s_data['service_code'],
-                "country": s_data['country_id']
+                "country": s_data['country_id'],
+                "maxPrice": s_data['max_price']  # STRICT MAX PRICE LOCK PASSED DIRECTLY TO API
             }
-            if op:
+            if op and op != "any":
                 params["operator"] = op
 
             try:
@@ -343,7 +319,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
         else:
-            msg_err = f"⚠️ **Stock Out!**\n\n❌ Ei muhurte kono number stock-e nei."
+            msg_err = f"⚠️ **Stock Out!**\n\n❌ ${s_data['max_price']} er modhye kono number ekhon stock-e nei."
             await query.edit_message_text(msg_err, parse_mode="Markdown")
 
     elif data.startswith("chk_otp_"):
@@ -593,7 +569,6 @@ async def deposit_screenshot_received(update: Update, context: ContextTypes.DEFA
 
     return ConversationHandler.END
 
-# Deposit cancel handler for callback query inside conversation
 async def deposit_cancel_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -712,5 +687,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully with fixed USA 0.12 Max Price Lock and Deposit Cancel feature!")
+    print("🤖 Bot running successfully with explicit API maxPrice parameter set to 0.12!")
     app.run_polling(drop_pending_updates=True)

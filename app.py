@@ -94,7 +94,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user_data(user_id, name, username)
 
     if user["is_banned"]:
-        await update.message.reply_text("🚫 Apnake bote ban kora hoyeche.")
+        await update.message.reply_text("🚫 Apnake ban kora hoyeche.")
         return
 
     is_admin = (user_id == ADMIN_ID)
@@ -251,10 +251,34 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("❌ Service pawa jayni.")
             return
 
-        price = s_data['selling_price']
+        # ১. getPricesV3 দিয়ে রিয়েল-টাইম দাম চেক করা
+        real_price = s_data['selling_price']
+        try:
+            p_params = {
+                "api_key": SMSBOWER_API_KEY,
+                "action": "getPricesV3",
+                "service": s_data['service_code'],
+                "country": s_data['country_id']
+            }
+            p_res = requests.get(SMSBOWER_URL, params=p_params, timeout=5).json()
+            real_price = float(p_res.get(s_data['country_id'], {}).get(s_data['service_code'], {}).get("cost", s_data['selling_price']))
+        except Exception:
+            pass
 
-        if user['balance'] < price:
-            msg_bal = "❌ Porjapto balance nei! Proyojon: ${:.3f}, ache:${:.2f}".format(price, user['balance'])
+        # ২. স্ট্রিক্ট লিমিট চেক: আসল দাম যদি আপনার max_price-এর বেশি হয়, তবে কেনা হবে না!
+        if real_price > s_data['max_price']:
+            err_msg = (
+                "⚠️ **Price Too High!**\n"
+                "Current Market Price: **${:.3f}**\n"
+                "Your Max Limit: **${:.3f}**\n\n"
+                "দাম বেশি থাকায় বট নাম্বার কেনা বাতিল করেছে।"
+            ).format(real_price, s_data['max_price'])
+            await query.edit_message_text(err_msg, parse_mode="Markdown")
+            return
+
+        # ৩. ব্যালেন্স চেক (আসল রিয়েল প্রাইস অনুযায়ী)
+        if user['balance'] < real_price:
+            msg_bal = "❌ Porjapto balance nei! Proyojon: ${:.3f}, ache:${:.2f}".format(real_price, user['balance'])
             await query.edit_message_text(msg_bal)
             return
 
@@ -272,7 +296,8 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 act_id = parts[1]
                 phone = parts[2]
 
-                user['balance'] -= price
+                # ইউজারের ব্যালেন্স থেকে আসল রিয়েল দামটাই কাটা হবে
+                user['balance'] -= real_price
 
                 service_name = "WhatsApp" if s_data['service_code'] == "wa" else "Telegram"
 
@@ -282,7 +307,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "service_name": service_name,
                     "country_name": s_data['country_name'],
                     "flag": s_data['flag'],
-                    "price": price
+                    "price": real_price
                 }
 
                 keyboard = [
@@ -296,7 +321,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "📞 **Number:** `{}`\n"
                     "💵 **Rate:** ${:.3f}\n\n"
                     "⚠️ OTP na asha porjonto opekkha korun..."
-                ).format(service_name, s_data['flag'], s_data['country_name'], phone, price)
+                ).format(service_name, s_data['flag'], s_data['country_name'], phone, real_price)
                 await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
             else:
                 msg_err = "❌ Stock Empty ba Service Unavailable। API Response: " + str(res)
@@ -379,12 +404,13 @@ async def admin_save_new_price(update: Update, context: ContextTypes.DEFAULT_TYP
         s_key = context.user_data['selected_service_key']
         
         PREDEFINED_SERVICES[s_key]['selling_price'] = new_price
+        PREDEFINED_SERVICES[s_key]['max_price'] = new_price  # max price o update hoye jabe
         s_data = PREDEFINED_SERVICES[s_key]
 
         msg = "✅ Price Updated!\n\n{} **{}** Custom Price set to: **${:.3f}**".format(s_data['flag'], s_data['country_name'], new_price)
         await update.message.reply_text(msg, parse_mode="Markdown")
     except ValueError:
-        await update.message.reply_text("❌ Shothik songkha likhun. Example: 0.15")
+        await update.message.reply_text("❌ Shothik songkha likhun. Example: 0.12")
         return WAITING_NEW_PRICE
 
     return ConversationHandler.END
@@ -645,5 +671,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu)$"), handle_user_menu))
 
-    print("🤖 Bot running smoothly without price check restriction...")
+    print("🤖 Bot running smoothly with strict V3 Price Check protection...")
     app.run_polling(drop_pending_updates=True)

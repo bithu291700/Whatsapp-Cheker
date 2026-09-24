@@ -17,14 +17,14 @@ ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 BINANCE_PAY_ID = os.getenv("BINANCE_PAY_ID", "123456789")
 SMSBOWER_URL = "https://smsbower.online/stubs/handler_api.php"
 
-# MongoDB Connection URI (Apnar MongoDB URI ekhane ba environment variable-e din)
+# MongoDB Connection URI
 MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://your_username:your_password@cluster.mongodb.net/?retryWrites=true&w=majority")
 client = MongoClient(MONGO_URI)
 db = client["sms_bot_database"]
 
-users_col = db["users"]          # {user_id, name, username, balance, total_otp, is_banned}
-deposits_col = db["deposits"]    # {deposit_id, user_id, amount, trx_id, photo_id, status}
-traffic_col = db["traffic_log"]  # {timestamp, service_name, country_name}
+users_col = db["users"]          
+deposits_col = db["deposits"]    
+traffic_col = db["traffic_log"]  
 
 # CONVERSATION STATES
 WAITING_DEPOSIT_AMOUNT = 1
@@ -38,9 +38,11 @@ WAITING_PRICE_SERVICE_KEY = 7
 WAITING_NEW_PRICE = 8
 
 # IN-MEMORY ACTIVE ORDERS
-active_orders = {}  # {user_id: {activation_id, phone, service_name, country_name, flag, price}}
+active_orders = {}  
 
-# PREDEFINED SERVICES (Strict Max Price & Admin Selling Price)
+# PREDEFINED SERVICES 
+# max_price = jeitar upore market gele ar kinbe na (Stock out dekhabe)
+# selling_price = user-er balance theke koto katbe (Admin set price)
 PREDEFINED_SERVICES = {
     "wa_usa_cellular": {
         "service_code": "wa", 
@@ -48,8 +50,8 @@ PREDEFINED_SERVICES = {
         "operators": ["cellular"], 
         "country_name": "USA Virtual (Cellular)", 
         "flag": "🇺🇸", 
-        "max_price": 0.120, 
-        "selling_price": 0.120
+        "max_price": 0.120,    # Eta fixed max limit (er upore gele kinbe na)
+        "selling_price": 0.120 # Eta user theke katar price (Admin change korte parbe)
     },
     "wa_afghanistan": {
         "service_code": "wa", 
@@ -166,7 +168,7 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"🆔 ID: `{user_id}`\n"
             f"👤 Name: {user.get('name')}\n"
             f"💰 Balance: **${user.get('balance', 0.0):.2f}**\n"
-            f"📩 Total OTP Received: **${user.get('total_otp', 0)}**"
+            f"📩 Total OTP Received: **{user.get('total_otp', 0)}**"
         )
         await update.message.reply_text(msg, parse_mode="Markdown")
 
@@ -224,7 +226,7 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🔙 Main Menu":
         await start(update, context)
 
-# ----------------- BUY NUMBER FLOW (STRICT MAX PRICE CHECK & ADMIN SELLING PRICE DEDUCTION) -----------------
+# ----------------- BUY NUMBER FLOW (STRICT MAX PRICE CHECK & SEPARATE ADMIN SELLING PRICE) -----------------
 
 async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -252,7 +254,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("❌ Service pawa jayni.")
             return
 
-        # 1. API theke actual market price check kora (shudhu dekhar jonno je price limit-er modhye ache kina)
+        # 1. API theke actual market price check kora
         market_price = s_data['max_price']
         try:
             p_params = {
@@ -266,16 +268,16 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
 
-        # STRICT CHECK: Jodi market price nirdharito max_price er cheye beshi hoy, tahole stock out dekhabe ar kinbe na
+        # 2. STRICT MAX PRICE LOCK CHECK: Jodi market price fixed max_price er beshi hoy, tahole ar kinbe na, Stock Out dekhabe.
         if market_price > s_data['max_price']:
             err_msg = (
                 f"⚠️ **Stock Out!**\n\n"
-                f"❌ বর্তমান রেট বেশি থাকায় বা স্টক না থাকায় নাম্বার কেনা সম্ভব হলো না।"
+                f"❌ বর্তমান মার্কেট রেট বেশি থাকায় বা স্টক না থাকায় নাম্বার কেনা সম্ভব হলো না (Stock Out)।"
             )
             await query.edit_message_text(err_msg, parse_mode="Markdown")
             return
 
-        # User-er balance theke katbe shudhu ADMIN-er nirdharito selling_price (website price-er sathe er kono somporko nei)
+        # 3. User balance deduction: Shudhu admin-er set kora selling_price katbe (market price-er sathe er kono somporko nei)
         charge_price = s_data['selling_price']
         user_balance = user.get('balance', 0.0)
 
@@ -393,11 +395,11 @@ async def admin_set_price_start(update: Update, context: ContextTypes.DEFAULT_TY
 
     keyboard = []
     for s_key, s_data in PREDEFINED_SERVICES.items():
-        btn_text = f"{s_data['flag']} {s_data['country_name']} (Cur: ${s_data['selling_price']})"
+        btn_text = f"{s_data['flag']} {s_data['country_name']} (Selling: ${s_data['selling_price']})"
         keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"setpr_{s_key}")])
 
     keyboard.append([InlineKeyboardButton("❌ Cancel", callback_data="admin_cancel")])
-    await update.message.reply_text("💰 **Kon service-er custom price set korte chan select korun:**", reply_markup=InlineKeyboardMarkup(keyboard))
+    await update.message.reply_text("💰 **Kon service-er selling price set korte chan select korun:**", reply_markup=InlineKeyboardMarkup(keyboard))
     return WAITING_PRICE_SERVICE_KEY
 
 async def admin_price_service_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -412,7 +414,7 @@ async def admin_price_service_selected(update: Update, context: ContextTypes.DEF
     context.user_data['selected_service_key'] = s_key
     s_data = PREDEFINED_SERVICES[s_key]
 
-    msg = f"📝 **{s_data['flag']} {s_data['country_name']}** -er jonno new selling price ($) type korun:"
+    msg = f"📝 **{s_data['flag']} {s_data['country_name']}** -er jonno new selling price ($) type korun (Eta user theke katbe):"
     await query.edit_message_text(msg, parse_mode="Markdown")
     return WAITING_NEW_PRICE
 
@@ -421,12 +423,11 @@ async def admin_save_new_price(update: Update, context: ContextTypes.DEFAULT_TYP
         new_price = float(update.message.text.strip())
         s_key = context.user_data['selected_service_key']
         
-        # Admin set price update hobe, ebong eta max_price hishebeo kaj korbe jate tar besi te na kine
+        # Shudhu selling_price update hobe, max_price (lock limit) okei thakbe!
         PREDEFINED_SERVICES[s_key]['selling_price'] = new_price
-        PREDEFINED_SERVICES[s_key]['max_price'] = new_price
         s_data = PREDEFINED_SERVICES[s_key]
 
-        msg = f"✅ Price Updated!\n\n{s_data['flag']} **{s_data['country_name']}** Custom Price set to: **${new_price:.3f}**"
+        msg = f"✅ Selling Price Updated!\n\n{s_data['flag']} **{s_data['country_name']}** New Selling Price: **${new_price:.3f}**\n(Max Price Limit:${s_data['max_price']:.3f})"
         await update.message.reply_text(msg, parse_mode="Markdown")
     except ValueError:
         await update.message.reply_text("❌ Shothik songkha likhun. Example: 0.12")
@@ -694,5 +695,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully with independent Admin Selling Price & Strict Max Price Stock-out check!")
+    print("🤖 Bot running successfully with fixed Max Price Lock and independent Admin Selling Price!")
     app.run_polling(drop_pending_updates=True)

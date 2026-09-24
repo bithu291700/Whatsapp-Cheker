@@ -50,7 +50,7 @@ PREDEFINED_SERVICES = {
         "operators": ["cellular"], 
         "country_name": "USA Virtual (Cellular)", 
         "flag": "🇺🇸", 
-        "max_price": 0.120,    # Eta fixed max limit (er upore gele kinbe na)
+        "max_price": 0.12,    # Eta fixed max limit (er upore gele kinbe na)
         "selling_price": 0.120 # Eta user theke katar price (Admin change korte parbe)
     },
     "wa_afghanistan": {

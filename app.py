@@ -48,7 +48,7 @@ PREDEFINED_SERVICES = {
         "operators": ["cellular", "any"], 
         "country_name": "USA Virtual", 
         "flag": "🇺🇸", 
-        "max_price": 0.120,    # USA max price strictly 0.12 fixed
+        "max_price": 0.14,    # USA max price strictly 0.14 fixed
         "selling_price": 0.120 
     },
     "wa_afghanistan": {

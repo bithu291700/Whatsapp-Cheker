@@ -13,10 +13,19 @@ from telegram.ext import (
 # ----------------- CONFIGURATION & MONGODB SETUP -----------------
 BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")
 SMSBOWER_API_KEY = os.getenv("SMSBOWER_API_KEY", "YOUR_SMSBOWER_API_KEY")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
+
+# Safe Conversion to prevent crashes if environment variables are empty or invalid
+try:
+    ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
+except (TypeError, ValueError):
+    ADMIN_ID = 0
+
+try:
+    OTP_GROUP_ID = int(os.getenv("OTP_GROUP_ID", "0"))
+except (TypeError, ValueError):
+    OTP_GROUP_ID = 0
+
 BINANCE_PAY_ID = os.getenv("BINANCE_PAY_ID", "123456789")
-# ওটিপি যে গ্রুপে ফরওয়ার্ড হবে তার চ্যাট আইডি (এখানে আপনার গ্রুপের আইডি বসাবেন বা এনভায়রনমেন্ট ভ্যারিয়েবল থেকে নেবে)
-OTP_GROUP_ID = int(os.getenv("OTP_GROUP_ID", "-1001234567890")) 
 SMSBOWER_URL = "https://smsbower.online/stubs/handler_api.php"
 
 # MongoDB Connection URI
@@ -38,7 +47,7 @@ WAITING_UNBAN_ID = 5
 WAITING_BROADCAST_MSG = 6
 WAITING_PRICE_SERVICE_KEY = 7
 WAITING_NEW_PRICE = 8
-WAITING_ZERO_BALANCE_ID = 9  # নতুন ইউজারের ব্যালেন্স জিরো করার জন্য
+WAITING_ZERO_BALANCE_ID = 9
 
 # IN-MEMORY ACTIVE ORDERS
 active_orders = {}  
@@ -246,7 +255,6 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user = get_user_data(user_id, query.from_user.first_name, query.from_user.username)
 
-    # যদি ইউজারের অলরেডি একটি অর্ডার একটিভ থাকে তবে নতুন নাম্বার নিতে দেওয়া যাবে না
     if user_id in active_orders and data.startswith("buynum_"):
         await query.answer("❌ Apnar ekti number already active ache! Age eta sesh ba cancel korun.", show_alert=True)
         return
@@ -298,7 +306,6 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 continue
 
         if bought_success:
-            # ব্যালেন্স হোল্ড করার জন্য নাম্বার নেওয়ার সাথে সাথেই কেটে নেওয়া হলো (অর্ডার ক্যান্সেল করলে রিফান্ড হবে)
             new_balance = user_balance - charge_price
             update_user_field(user_id, {"balance": new_balance})
             service_name = "WhatsApp"
@@ -351,11 +358,9 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"💬 **OTP:** `{otp_code}`"
             )
             
-            # অর্ডার সফল হওয়ায় একটিভ লিস্ট থেকে ডিলিট (টাকা অলরেডি হোল্ড থেকে কেটে নেওয়া হয়েছে)
             del active_orders[user_id]
             await query.edit_message_text(msg, parse_mode="Markdown")
 
-            # ওটিপি রিসিভ হওয়ার সাথে সাথে নির্দিষ্ট টেলিগ্রাম গ্রুপে ফরওয়ার্ড করা
             if OTP_GROUP_ID != 0:
                 try:
                     group_msg = (
@@ -382,7 +387,6 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 requests.get(SMSBOWER_URL, params={"api_key": SMSBOWER_API_KEY, "action": "setStatus", "status": 8, "id": order['activation_id']}, timeout=5)
             except Exception:
                 pass
-            # অর্ডার ক্যানসেল করায় হোল্ড থাকা ব্যালেন্স রিফান্ড বা ফেরত দেওয়া হলো
             refund_balance = user.get('balance', 0.0) + order['price']
             update_user_field(user_id, {"balance": refund_balance})
             del active_orders[user_id]
@@ -669,7 +673,6 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
 if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Deposit Conversation Handler with Cancel support
     deposit_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^💳 Deposit$"), deposit_start)],
         states={
@@ -690,7 +693,6 @@ if __name__ == "__main__":
         fallbacks=[CommandHandler("start", start)]
     )
 
-    # Admin Set Price Conversation Handler
     price_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^💰 Set Service Price$"), admin_set_price_start)],
         states={
@@ -700,28 +702,24 @@ if __name__ == "__main__":
         fallbacks=[CommandHandler("start", start)]
     )
 
-    # Admin Zero Balance Conversation Handler
     zero_balance_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^🔄 Zero User Balance$"), admin_zero_balance_start)],
         states={WAITING_ZERO_BALANCE_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_zero_balance_submit)]},
         fallbacks=[CommandHandler("start", start)]
     )
 
-    # Admin Ban Conversation Handler
     ban_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^🚫 Ban User$"), admin_ban_start)],
         states={WAITING_BAN_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_ban_submit)]},
         fallbacks=[CommandHandler("start", start)]
     )
 
-    # Admin Unban Conversation Handler
     unban_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^✅ Unban User$"), admin_unban_start)],
         states={WAITING_UNBAN_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_unban_submit)]},
         fallbacks=[CommandHandler("start", start)]
     )
 
-    # Admin Broadcast Conversation Handler
     broadcast_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^📢 Broadcast$"), admin_broadcast_start)],
         states={WAITING_BROADCAST_MSG: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_broadcast_submit)]},
@@ -742,5 +740,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully with isolated balances, OTP group forwarding, and balance hold/refund features!")
+    print("🤖 Bot running successfully with all fixed features!")
     app.run_polling(drop_pending_updates=True)

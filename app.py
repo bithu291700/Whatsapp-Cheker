@@ -15,6 +15,8 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")
 SMSBOWER_API_KEY = os.getenv("SMSBOWER_API_KEY", "YOUR_SMSBOWER_API_KEY")
 ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 BINANCE_PAY_ID = os.getenv("BINANCE_PAY_ID", "123456789")
+# ওটিপি যে গ্রুপে ফরওয়ার্ড হবে তার চ্যাট আইডি (এখানে আপনার গ্রুপের আইডি বসাবেন বা এনভায়রনমেন্ট ভ্যারিয়েবল থেকে নেবে)
+OTP_GROUP_ID = int(os.getenv("OTP_GROUP_ID", "-1001234567890")) 
 SMSBOWER_URL = "https://smsbower.online/stubs/handler_api.php"
 
 # MongoDB Connection URI
@@ -36,6 +38,7 @@ WAITING_UNBAN_ID = 5
 WAITING_BROADCAST_MSG = 6
 WAITING_PRICE_SERVICE_KEY = 7
 WAITING_NEW_PRICE = 8
+WAITING_ZERO_BALANCE_ID = 9  # নতুন ইউজারের ব্যালেন্স জিরো করার জন্য
 
 # IN-MEMORY ACTIVE ORDERS
 active_orders = {}  
@@ -48,7 +51,7 @@ PREDEFINED_SERVICES = {
         "operators": ["cellular", "any"], 
         "country_name": "USA Virtual", 
         "flag": "🇺🇸", 
-        "max_price": 0.14,    # USA max price strictly 0.14 fixed
+        "max_price": 0.14,    
         "selling_price": 0.120 
     },
     "wa_afghanistan": {
@@ -87,7 +90,7 @@ def get_admin_keyboard():
         [KeyboardButton("👥 View All Users"), KeyboardButton("💰 Set Service Price")],
         [KeyboardButton("📊 Live Traffic"), KeyboardButton("📢 Broadcast")],
         [KeyboardButton("🚫 Ban User"), KeyboardButton("✅ Unban User")],
-        [KeyboardButton("🔙 Main Menu")]
+        [KeyboardButton("🔄 Zero User Balance"), KeyboardButton("🔙 Main Menu")]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
@@ -147,13 +150,12 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception:
                 sms_bal = "Error fetching"
 
-            total_user_bal = sum(u.get("balance", 0.0) for u in users_col.find())
             total_users_count = users_col.count_documents({})
             msg = (
                 f"💳 **Admin Account Balance & Info:**\n\n"
                 f"🌐 **SMS Bower API Balance:** ${sms_bal}\n"
                 f"👥 **Total Bot Users:** {total_users_count}\n"
-                f"💰 **Total User Balances:** ${total_user_bal:.2f}"
+                f"💰 **Admin Personal Balance:** ${user.get('balance', 0.0):.2f}"
             )
         else:
             msg = f"💳 **Apnar bortoman balance:** ${user.get('balance', 0.0):.2f}"
@@ -224,7 +226,7 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🔙 Main Menu":
         await start(update, context)
 
-# ----------------- BUY NUMBER FLOW WITH STRICT MAX PRICE -----------------
+# ----------------- BUY NUMBER FLOW WITH HOLD & REFUND -----------------
 
 async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -243,6 +245,11 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
 
     user = get_user_data(user_id, query.from_user.first_name, query.from_user.username)
+
+    # যদি ইউজারের অলরেডি একটি অর্ডার একটিভ থাকে তবে নতুন নাম্বার নিতে দেওয়া যাবে না
+    if user_id in active_orders and data.startswith("buynum_"):
+        await query.answer("❌ Apnar ekti number already active ache! Age eta sesh ba cancel korun.", show_alert=True)
+        return
 
     if data.startswith("buynum_"):
         s_key = data.replace("buynum_", "")
@@ -273,7 +280,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "action": "getNumber",
                 "service": s_data['service_code'],
                 "country": s_data['country_id'],
-                "maxPrice": s_data['max_price']  # STRICT MAX PRICE LOCK PASSED DIRECTLY TO API
+                "maxPrice": s_data['max_price']  
             }
             if op and op != "any":
                 params["operator"] = op
@@ -291,6 +298,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 continue
 
         if bought_success:
+            # ব্যালেন্স হোল্ড করার জন্য নাম্বার নেওয়ার সাথে সাথেই কেটে নেওয়া হলো (অর্ডার ক্যান্সেল করলে রিফান্ড হবে)
             new_balance = user_balance - charge_price
             update_user_field(user_id, {"balance": new_balance})
             service_name = "WhatsApp"
@@ -314,7 +322,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"🏷 **Service:** {service_name}{op_text}\n"
                 f"{s_data['flag']} **Country:** {s_data['country_name']}\n"
                 f"📞 **Number:** `{phone}`\n"
-                f"💵 **Rate Deducted:** ${charge_price:.3f}\n\n"
+                f"💵 **Rate Held:** ${charge_price:.3f}\n\n"
                 f"⚠️ OTP na asha porjonto opekkha korun..."
             )
             await query.edit_message_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
@@ -342,8 +350,26 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"📞 Number: `{order['phone']}`\n"
                 f"💬 **OTP:** `{otp_code}`"
             )
+            
+            # অর্ডার সফল হওয়ায় একটিভ লিস্ট থেকে ডিলিট (টাকা অলরেডি হোল্ড থেকে কেটে নেওয়া হয়েছে)
             del active_orders[user_id]
             await query.edit_message_text(msg, parse_mode="Markdown")
+
+            # ওটিপি রিসিভ হওয়ার সাথে সাথে নির্দিষ্ট টেলিগ্রাম গ্রুপে ফরওয়ার্ড করা
+            if OTP_GROUP_ID != 0:
+                try:
+                    group_msg = (
+                        f"🚨 **New OTP Received!**\n\n"
+                        f"👤 User: {query.from_user.first_name} (`{user_id}`)\n"
+                        f"🏷 Service: {order['service_name']}\n"
+                        f"{order['flag']} Country: {order['country_name']}\n"
+                        f"📞 Number: `{order['phone']}`\n"
+                        f"💬 **OTP Code:** `{otp_code}`"
+                    )
+                    await context.bot.send_message(chat_id=OTP_GROUP_ID, text=group_msg, parse_mode="Markdown")
+                except Exception as e:
+                    print("OTP Group Forward Error:", e)
+
         elif "STATUS_WAIT_CODE" in res:
             await query.answer("⏳ Ekhono OTP aseni, abar chesta korun...", show_alert=True)
         else:
@@ -356,10 +382,11 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 requests.get(SMSBOWER_URL, params={"api_key": SMSBOWER_API_KEY, "action": "setStatus", "status": 8, "id": order['activation_id']}, timeout=5)
             except Exception:
                 pass
+            # অর্ডার ক্যানসেল করায় হোল্ড থাকা ব্যালেন্স রিফান্ড বা ফেরত দেওয়া হলো
             refund_balance = user.get('balance', 0.0) + order['price']
             update_user_field(user_id, {"balance": refund_balance})
             del active_orders[user_id]
-            await query.edit_message_text("✅ Order batil kora hoyeche ebang balance ferot deya hoyeche.")
+            await query.edit_message_text("✅ Order batil kora hoyeche ebang hold thaka balance ferot deya hoyeche.")
 
 # ----------------- ADMIN PRICE SETTING CONVERSATION -----------------
 
@@ -406,6 +433,26 @@ async def admin_save_new_price(update: Update, context: ContextTypes.DEFAULT_TYP
         await update.message.reply_text("❌ Shothik songkha likhun. Example: 0.12")
         return WAITING_NEW_PRICE
 
+    return ConversationHandler.END
+
+# ----------------- ADMIN ZERO BALANCE CONVERSATION -----------------
+
+async def admin_zero_balance_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_ID: return ConversationHandler.END
+    await update.message.reply_text("🔄 Je user-er balance 0 (zero) korte chan tar User ID ti type korun:")
+    return WAITING_ZERO_BALANCE_ID
+
+async def admin_zero_balance_submit(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        target_id = int(update.message.text.strip())
+        target_user = users_col.find_one({"user_id": target_id})
+        if target_user:
+            users_col.update_one({"user_id": target_id}, {"$set": {"balance": 0.0}})
+            await update.message.reply_text(f"✅ User `{target_id}` er balance সফলভাবে 0 (zero) kora hoyeche.", parse_mode="Markdown")
+        else:
+            await update.message.reply_text("❌ Kono user pawa jayni ei ID diye.")
+    except ValueError:
+        await update.message.reply_text("❌ Invalid ID format. Shothik songkha likhun.")
     return ConversationHandler.END
 
 # ----------------- ADMIN BAN / UNBAN / BROADCAST -----------------
@@ -653,6 +700,13 @@ if __name__ == "__main__":
         fallbacks=[CommandHandler("start", start)]
     )
 
+    # Admin Zero Balance Conversation Handler
+    zero_balance_conv = ConversationHandler(
+        entry_points=[MessageHandler(filters.Regex("^🔄 Zero User Balance$"), admin_zero_balance_start)],
+        states={WAITING_ZERO_BALANCE_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_zero_balance_submit)]},
+        fallbacks=[CommandHandler("start", start)]
+    )
+
     # Admin Ban Conversation Handler
     ban_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^🚫 Ban User$"), admin_ban_start)],
@@ -677,6 +731,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("start", start))
     app.add_handler(deposit_conv)
     app.add_handler(price_conv)
+    app.add_handler(zero_balance_conv)
     app.add_handler(ban_conv)
     app.add_handler(unban_conv)
     app.add_handler(broadcast_conv)
@@ -687,5 +742,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully with explicit API maxPrice parameter set to 0.12!")
+    print("🤖 Bot running successfully with isolated balances, OTP group forwarding, and balance hold/refund features!")
     app.run_polling(drop_pending_updates=True)

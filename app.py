@@ -14,7 +14,6 @@ from telegram.ext import (
 BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")
 SMSBOWER_API_KEY = os.getenv("SMSBOWER_API_KEY", "YOUR_SMSBOWER_API_KEY")
 
-# Safe Conversion to prevent crashes if environment variables are empty or invalid
 try:
     ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 except (TypeError, ValueError):
@@ -28,14 +27,18 @@ except (TypeError, ValueError):
 BINANCE_PAY_ID = os.getenv("BINANCE_PAY_ID", "123456789")
 SMSBOWER_URL = "https://smsbower.online/stubs/handler_api.php"
 
-# MongoDB Connection URI
 MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://your_username:your_password@cluster.mongodb.net/?retryWrites=true&w=majority")
 client = MongoClient(MONGO_URI)
 db = client["sms_bot_database"]
 
 users_col = db["users"]          
 deposits_col = db["deposits"]    
-traffic_col = db["traffic_log"]  
+traffic_log_col = db["traffic_log"]  
+settings_col = db["settings"]    
+
+# বট অন/অফ স্ট্যাটাস ইনিশিয়ালাইজ করা (ডিফল্ট: অন)
+if settings_col.find_one({"key": "bot_status"}) is None:
+    settings_col.insert_one({"key": "bot_status", "is_on": True})
 
 # CONVERSATION STATES
 WAITING_DEPOSIT_AMOUNT = 1
@@ -48,11 +51,11 @@ WAITING_BROADCAST_MSG = 6
 WAITING_PRICE_SERVICE_KEY = 7
 WAITING_NEW_PRICE = 8
 WAITING_ZERO_BALANCE_ID = 9
+WAITING_PASSWORD = 10
 
 # IN-MEMORY ACTIVE ORDERS
 active_orders = {}  
 
-# PREDEFINED SERVICES 
 PREDEFINED_SERVICES = {
     "wa_usa_cellular": {
         "service_code": "wa", 
@@ -95,11 +98,15 @@ def get_main_keyboard(is_admin=False):
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 def get_admin_keyboard():
+    bot_status = settings_col.find_one({"key": "bot_status"}).get("is_on", True)
+    status_btn_text = "🔴 Turn Bot OFF" if bot_status else "🟢 Turn Bot ON"
+    
     keyboard = [
         [KeyboardButton("👥 View All Users"), KeyboardButton("💰 Set Service Price")],
         [KeyboardButton("📊 Live Traffic"), KeyboardButton("📢 Broadcast")],
         [KeyboardButton("🚫 Ban User"), KeyboardButton("✅ Unban User")],
-        [KeyboardButton("🔄 Zero User Balance"), KeyboardButton("🔙 Main Menu")]
+        [KeyboardButton("🔄 Zero User Balance"), KeyboardButton(status_btn_text)],
+        [KeyboardButton("🔙 Main Menu")]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
@@ -112,7 +119,8 @@ def get_user_data(user_id, name, username):
             "username": username or "N/A",
             "balance": 0.0,
             "total_otp": 0,
-            "is_banned": False
+            "is_banned": False,
+            "is_verified": False
         }
         users_col.insert_one(user)
     return user
@@ -120,22 +128,53 @@ def get_user_data(user_id, name, username):
 def update_user_field(user_id, update_dict):
     users_col.update_one({"user_id": user_id}, {"$set": update_dict})
 
-# ----------------- START HANDLER -----------------
+# ----------------- START & PASSWORD HANDLER -----------------
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     name = update.effective_user.first_name
     username = update.effective_user.username
 
+    # বট অফ করা আছে কিনা চেক করা
+    bot_status = settings_col.find_one({"key": "bot_status"}).get("is_on", True)
+    if not bot_status and user_id != ADMIN_ID:
+        await update.message.reply_text("🛠 Bot ekhon maintenance-er karone off royeche. Doyore kore pore chesta korun.")
+        return ConversationHandler.END
+
     user = get_user_data(user_id, name, username)
 
     if user.get("is_banned"):
         await update.message.reply_text("🚫 Apnake ban kora hoyeche.")
-        return
+        return ConversationHandler.END
 
     is_admin = (user_id == ADMIN_ID)
+
+    # যদি অ্যাডমিন না হয় এবং পাসওয়ার্ড ভেরিফাইড না থাকে
+    if not is_admin and not user.get("is_verified", False):
+        await update.message.reply_text("🔒 Bot-ti bebohar korar jonno password din:\n(Password: `REX1234`)", parse_mode="Markdown")
+        return WAITING_PASSWORD
+
     msg = f"👋 **Hello {name}!**\n\nSwagotom amader SMS Service Bote."
     await update.message.reply_text(msg, reply_markup=get_main_keyboard(is_admin=is_admin), parse_mode="Markdown")
+    return ConversationHandler.END
+
+async def verify_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    text = update.message.text.strip()
+    name = update.effective_user.first_name
+    username = update.effective_user.username
+
+    if text == "REX1234":
+        update_user_field(user_id, {"is_verified": True})
+        await update.message.reply_text("✅ Password sothik hoyeche! Apnake access deya holo.")
+        user = get_user_data(user_id, name, username)
+        is_admin = (user_id == ADMIN_ID)
+        msg = f"👋 **Hello {name}!**\n\nSwagotom amader SMS Service Bote."
+        await update.message.reply_text(msg, reply_markup=get_main_keyboard(is_admin=is_admin), parse_mode="Markdown")
+        return ConversationHandler.END
+    else:
+        await update.message.reply_text("❌ Vul password! Abar sothik password-ti din:")
+        return WAITING_PASSWORD
 
 # ----------------- USER & ADMIN MENU HANDLERS -----------------
 
@@ -144,9 +183,28 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     name = update.effective_user.first_name
     username = update.effective_user.username
+    
+    bot_status = settings_col.find_one({"key": "bot_status"}).get("is_on", True)
+    if not bot_status and user_id != ADMIN_ID:
+        await update.message.reply_text("🛠 Bot ekhon off royeche.")
+        return
+
     user = get_user_data(user_id, name, username)
 
     if user.get("is_banned"):
+        return
+
+    if not (user_id == ADMIN_ID) and not user.get("is_verified", False):
+        await update.message.reply_text("🔒 Age `/start` diye password diye verify korun.", parse_mode="Markdown")
+        return
+
+    # Bot On/Off Toggle Button for Admin
+    if user_id == ADMIN_ID and text in ["🟢 Turn Bot ON", "🔴 Turn Bot OFF"]:
+        current_status = bot_status
+        new_status = not current_status
+        settings_col.update_one({"key": "bot_status"}, {"$set": {"is_on": new_status}})
+        status_text = "🟢 Bot ON kora hoyeche." if new_status else "🔴 Bot OFF kora hoyeche."
+        await update.message.reply_text(status_text, reply_markup=get_admin_keyboard())
         return
 
     if text == "💳 Account Balance":
@@ -221,7 +279,7 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(msg, parse_mode="Markdown")
 
     elif text == "📊 Live Traffic" and user_id == ADMIN_ID:
-        recent_traffic = list(traffic_col.find().sort("timestamp", -1).limit(10))
+        recent_traffic = list(traffic_log_col.find().sort("timestamp", -1).limit(10))
         if not recent_traffic:
             await update.message.reply_text("📊 Kono live traffic log nei.")
             return
@@ -233,7 +291,8 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(msg, parse_mode="Markdown")
 
     elif text == "🔙 Main Menu":
-        await start(update, context)
+        is_admin = (user_id == ADMIN_ID)
+        await update.message.reply_text("🏠 Main Menu:", reply_markup=get_main_keyboard(is_admin=is_admin))
 
 # ----------------- BUY NUMBER FLOW WITH HOLD & REFUND -----------------
 
@@ -244,7 +303,9 @@ async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_T
 
     if data == "nav_back_main":
         await query.message.delete()
-        await start(update, context)
+        user_id = query.from_user.id
+        is_admin = (user_id == ADMIN_ID)
+        await query.message.reply_text("🏠 Main Menu:", reply_markup=get_main_keyboard(is_admin=is_admin))
         return
 
 async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -349,7 +410,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             current_otp_count = user.get('total_otp', 0) + 1
             update_user_field(user_id, {"total_otp": current_otp_count})
             
-            traffic_col.insert_one({"timestamp": datetime.now(), "service_name": order['service_name'], "country_name": order['country_name']})
+            traffic_log_col.insert_one({"timestamp": datetime.now(), "service_name": order['service_name'], "country_name": order['country_name']})
 
             msg = (
                 f"🎉 **OTP Received!**\n\n"
@@ -673,6 +734,15 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
 if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+    # Password Handler Conversation for /start
+    start_conv = ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
+        states={
+            WAITING_PASSWORD: [MessageHandler(filters.TEXT & ~filters.COMMAND, verify_password)]
+        },
+        fallbacks=[CommandHandler("start", start)]
+    )
+
     deposit_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^💳 Deposit$"), deposit_start)],
         states={
@@ -726,7 +796,7 @@ if __name__ == "__main__":
         fallbacks=[CommandHandler("start", start)]
     )
 
-    app.add_handler(CommandHandler("start", start))
+    app.add_handler(start_conv)
     app.add_handler(deposit_conv)
     app.add_handler(price_conv)
     app.add_handler(zero_balance_conv)
@@ -738,7 +808,7 @@ if __name__ == "__main__":
     app.add_handler(CallbackQueryHandler(handle_buy_action, pattern="^(buynum_|chk_otp_|cancel_ord_)"))
     app.add_handler(CallbackQueryHandler(handle_admin_approval, pattern="^(depapp_|deprej_)"))
 
-    app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu)$"), handle_user_menu))
+    app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu|🟢 Turn Bot ON|🔴 Turn Bot OFF)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully with all fixed features!")
+    print("🤖 Bot running successfully with Password protection & Bot ON/OFF features!")
     app.run_polling(drop_pending_updates=True)

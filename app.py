@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import asyncio
 import requests
 from datetime import datetime
 from pymongo import MongoClient
@@ -151,6 +152,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🔒 Bot-ti bebohar korar jonno sothik password-ti din:")
         return WAITING_PASSWORD
 
+    # Yellow Loading Animation for Start
+    msg_obj = await update.message.reply_text("🟡 **Loading System...**\n`[▒▒▒▒▒▒▒▒▒▒] 0%`", parse_mode="Markdown")
+    await asyncio.sleep(0.4)
+    await msg_obj.edit_text("🟡 **Connecting Database...**\n`[█████▒▒▒▒▒] 50%`", parse_mode="Markdown")
+    await asyncio.sleep(0.4)
+    await msg_obj.edit_text("🟡 **Welcome Ready!**\n`[██████████] 100%`", parse_mode="Markdown")
+    await asyncio.sleep(0.3)
+    await msg_obj.delete()
+
     msg = f"👋 **Hello {name}!**\n\nSwagotom amader SMS Service Bote."
     await update.message.reply_text(msg, reply_markup=get_main_keyboard(is_admin=is_admin), parse_mode="Markdown")
     return ConversationHandler.END
@@ -163,6 +173,14 @@ async def verify_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if text == "REX1234":
         update_user_field(user_id, {"is_verified": True})
+        
+        # Yellow Loading Animation after password success
+        msg_obj = await update.message.reply_text("🟡 **Verifying Password...**\n`[▒▒▒▒▒▒▒▒▒▒] 0%`", parse_mode="Markdown")
+        await asyncio.sleep(0.4)
+        await msg_obj.edit_text("🟡 **Access Granted...**\n`[██████████] 100%`", parse_mode="Markdown")
+        await asyncio.sleep(0.3)
+        await msg_obj.delete()
+
         await update.message.reply_text("✅ Password sothik hoyeche! Apnake access deya holo.")
         user = get_user_data(user_id, name, username)
         is_admin = (user_id == ADMIN_ID)
@@ -290,7 +308,7 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         is_admin = (user_id == ADMIN_ID)
         await update.message.reply_text("🏠 Main Menu:", reply_markup=get_main_keyboard(is_admin=is_admin))
 
-# ----------------- BUY NUMBER FLOW WITH HOLD & REFUND -----------------
+# ----------------- BUY NUMBER FLOW WITH GREEN LOADING -----------------
 
 async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -332,6 +350,12 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text(msg_bal)
             return
 
+        # Green Loading Animation while processing number purchase
+        await query.edit_message_text("🟢 **Connecting Gateway...**\n`[▒▒▒▒▒▒▒▒▒▒] 0%`", parse_mode="Markdown")
+        await asyncio.sleep(0.3)
+        await query.edit_message_text("🟢 **Fetching Number from Server...**\n`[█████▒▒▒▒▒] 50%`", parse_mode="Markdown")
+        await asyncio.sleep(0.3)
+
         bought_success = False
         res = ""
         act_id = ""
@@ -361,6 +385,9 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     break
             except Exception:
                 continue
+
+        await query.edit_message_text("🟢 **Finalizing Order...**\n`[██████████] 100%`", parse_mode="Markdown")
+        await asyncio.sleep(0.3)
 
         if bought_success:
             new_balance = user_balance - charge_price
@@ -805,5 +832,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu|🟢 Turn Bot ON|🔴 Turn Bot OFF)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully with hidden password security!")
+    print("🤖 Bot running successfully with premium yellow & green loading animations!")
     app.run_polling(drop_pending_updates=True)

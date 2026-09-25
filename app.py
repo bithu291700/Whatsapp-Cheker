@@ -36,7 +36,6 @@ deposits_col = db["deposits"]
 traffic_log_col = db["traffic_log"]  
 settings_col = db["settings"]    
 
-# বট অন/অফ স্ট্যাটাস ইনিশিয়ালাইজ করা (ডিফল্ট: অন)
 if settings_col.find_one({"key": "bot_status"}) is None:
     settings_col.insert_one({"key": "bot_status", "is_on": True})
 
@@ -135,7 +134,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     name = update.effective_user.first_name
     username = update.effective_user.username
 
-    # বট অফ করা আছে কিনা চেক করা
     bot_status = settings_col.find_one({"key": "bot_status"}).get("is_on", True)
     if not bot_status and user_id != ADMIN_ID:
         await update.message.reply_text("🛠 Bot ekhon maintenance-er karone off royeche. Doyore kore pore chesta korun.")
@@ -149,9 +147,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     is_admin = (user_id == ADMIN_ID)
 
-    # যদি অ্যাডমিন না হয় এবং পাসওয়ার্ড ভেরিফাইড না থাকে
     if not is_admin and not user.get("is_verified", False):
-        await update.message.reply_text("🔒 Bot-ti bebohar korar jonno password din:\n(Password: `REX1234`)", parse_mode="Markdown")
+        await update.message.reply_text("🔒 Bot-ti bebohar korar jonno sothik password-ti din:")
         return WAITING_PASSWORD
 
     msg = f"👋 **Hello {name}!**\n\nSwagotom amader SMS Service Bote."
@@ -198,7 +195,6 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🔒 Age `/start` diye password diye verify korun.", parse_mode="Markdown")
         return
 
-    # Bot On/Off Toggle Button for Admin
     if user_id == ADMIN_ID and text in ["🟢 Turn Bot ON", "🔴 Turn Bot OFF"]:
         current_status = bot_status
         new_status = not current_status
@@ -734,7 +730,6 @@ async def handle_admin_approval(update: Update, context: ContextTypes.DEFAULT_TY
 if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Password Handler Conversation for /start
     start_conv = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
@@ -810,5 +805,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu|🟢 Turn Bot ON|🔴 Turn Bot OFF)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully with Password protection & Bot ON/OFF features!")
+    print("🤖 Bot running successfully with hidden password security!")
     app.run_polling(drop_pending_updates=True)

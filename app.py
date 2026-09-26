@@ -20,7 +20,6 @@ from telethon.tl.types import InputPhoneContact
 BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")
 SMSBOWER_API_KEY = os.getenv("SMSBOWER_API_KEY", "YOUR_SMSBOWER_API_KEY")
 
-# Telethon Credentials (Telegram API ID & Hash for real checking)
 TG_API_ID = int(os.getenv("TG_API_ID", "0"))
 TG_API_HASH = os.getenv("TG_API_HASH", "your_telegram_api_hash")
 
@@ -65,6 +64,7 @@ WAITING_PASSWORD = 10
 # IN-MEMORY ACTIVE ORDERS
 active_orders = {}  
 
+# Ager sob services abar add kora holo
 PREDEFINED_SERVICES = {
     "wa_usa_cellular": {
         "service_code": "wa", 
@@ -75,6 +75,46 @@ PREDEFINED_SERVICES = {
         "flag": "🇺🇸", 
         "max_price": 0.14,    
         "selling_price": 0.120 
+    },
+    "wa_afghanistan": {
+        "service_code": "wa", 
+        "country_id": "74", 
+        "operators": ["AWCC", "Roshan", "MTN", "Etisalat", "WASEL", "Salaam", "any"], 
+        "country_name": "Afghanistan", 
+        "service_name": "WhatsApp",
+        "flag": "🇦🇫", 
+        "max_price": 0.119, 
+        "selling_price": 0.119
+    },
+    "wa_madagascar": {
+        "service_code": "wa", 
+        "country_id": "17", 
+        "operators": ["Airtel", "Orange", "Sacel", "Telma", "BIP / blueline", "any"], 
+        "country_name": "Madagascar", 
+        "service_name": "WhatsApp",
+        "flag": "🇲🇬", 
+        "max_price": 0.163, 
+        "selling_price": 0.163
+    },
+    "wa_indonesia": {
+        "service_code": "wa", 
+        "country_id": "6", 
+        "operators": ["PSN", "Indosat Ooredoo Hutchison", "StarOne", "TelkomFlexi", "AXIS", "Smartfren", "Telkomsel", "XL", "TELKOMMobile", "Net 1", "Fren/Hepi", "Hinet", "BOLT! 4G LTE", "3", "Esia", "any"], 
+        "country_name": "Indonesia", 
+        "service_name": "WhatsApp",
+        "flag": "🇮🇩", 
+        "max_price": 0.1, 
+        "selling_price": 0.1
+    },
+    "wa_iraq": {
+        "service_code": "wa", 
+        "country_id": "47", 
+        "operators": ["Asia Cell", "SanaTel", "Zain", "Korek", "Mobitel", "Itisaluna", "Omnnea", "any"], 
+        "country_name": "Iraq", 
+        "service_name": "WhatsApp",
+        "flag": "🇮🇶", 
+        "max_price": 0.142, 
+        "selling_price": 0.142
     },
     "tg_chile": {
         "service_code": "tg", 
@@ -308,7 +348,7 @@ async def execute_buy_number(user_id, s_key, user, query_or_message, is_edit=Tru
         return
 
     if is_edit:
-        await query_or_message.edit_message_text("🟢 **Buying number and checking status via Telegram API...**", parse_mode="Markdown")
+        await query_or_message.edit_message_text("🟢 **Buying number and checking status...**", parse_mode="Markdown")
     else:
         await query_or_message.reply_text("🟢 **Buying New Number...**", parse_mode="Markdown")
 
@@ -463,5 +503,5 @@ if __name__ == "__main__":
     app.add_handler(CallbackQueryHandler(handle_buy_action, pattern="^(buynum_|chk_otp_|cancel_ord_|nextbuy_)"))
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|🔙 Main Menu|🟢 Turn Bot ON|🔴 Turn Bot OFF)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully!")
+    print("🤖 Bot running successfully with all services!")
     app.run_polling(drop_pending_updates=True)

@@ -154,16 +154,15 @@ async def check_telegram_number_status(phone_number, service_code):
                 api_hash=TG_API_HASH,
                 settings=CodeSettings()
             ))
-            status_result = "🔴 **Telegram Status:** Already Registered / Account Exists!"
+            status_result = "🟢 **Telegram Status:** 100% Fresh & Clean (Not Registered)"
         except Exception as e:
             err_msg = str(e).lower()
-            if "phone_number_banned" in err_msg or "banned" in err_msg:
+            if "phone_number_banned" in err_msg or "banned" in err_msg or "auth_key" in err_msg or "user_deactivated" in err_msg:
                 status_result = "🛑 **Telegram Status:** BANNED NUMBER!"
-            elif "phone_number_invalid" in err_msg:
+            elif "phone_number_invalid" in err_msg or "invalid" in err_msg:
                 status_result = "⚠️ **Telegram Status:** Invalid Number!"
             else:
-                # If code is sent or another normal flow, it means the number is fresh/unregistered for a new account signup
-                status_result = "🟢 **Telegram Status:** 100% Fresh & Clean (Not Registered)"
+                status_result = "🛑 **Telegram Status:** BANNED NUMBER / Restricted!"
 
         await client_tele.disconnect()
         return status_result
@@ -173,7 +172,7 @@ async def check_telegram_number_status(phone_number, service_code):
             await client_tele.disconnect()
         except:
             pass
-        return "🟢 **Telegram Status:** 100% Fresh & Clean (Not Registered)"
+        return "🛑 **Telegram Status:** BANNED NUMBER / Restricted!"
 
 # ----------------- KEYBOARDS -----------------
 
@@ -537,5 +536,5 @@ if __name__ == "__main__":
     app.add_handler(CallbackQueryHandler(handle_buy_action, pattern="^(buynum_|chk_otp_|cancel_ord_|nextbuy_)"))
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|🔙 Main Menu|🟢 Turn Bot ON|🔴 Turn Bot OFF)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully with SendCodeRequest Accurate Ban Checker!")
+    print("🤖 Bot running successfully with Fixed Accurate Ban Checker!")
     app.run_polling(drop_pending_updates=True)

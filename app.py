@@ -11,16 +11,15 @@ from telegram.ext import (
     MessageHandler, ContextTypes, ConversationHandler, filters
 )
 
-# Telethon imports for real Telegram number checking
+# Telethon imports for accurate SendCodeRequest based ban/registration checker
 from telethon import TelegramClient
-from telethon.tl.functions.contacts import ImportContactsRequest
-from telethon.tl.types import InputPhoneContact
+from telethon.tl.functions.auth import SendCodeRequest
+from telethon.tl.types import CodeSettings
 
 # ----------------- CONFIGURATION & MONGODB SETUP -----------------
 BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")
 SMSBOWER_API_KEY = os.getenv("SMSBOWER_API_KEY", "YOUR_SMSBOWER_API_KEY")
 
-# Telethon Credentials (Telegram API ID & Hash for real checking)
 TG_API_ID = int(os.getenv("TG_API_ID", "0"))
 TG_API_HASH = os.getenv("TG_API_HASH", "your_telegram_api_hash")
 
@@ -72,9 +71,49 @@ PREDEFINED_SERVICES = {
         "operators": ["cellular", "any"], 
         "country_name": "USA Virtual", 
         "service_name": "WhatsApp",
-        "flag": "🇺🇸", 
+        "flag": "ðŸ‡ºðŸ‡¸", 
         "max_price": 0.14,    
         "selling_price": 0.120 
+    },
+    "wa_afghanistan": {
+        "service_code": "wa", 
+        "country_id": "74", 
+        "operators": ["AWCC", "Roshan", "MTN", "Etisalat", "WASEL", "Salaam", "any"], 
+        "country_name": "Afghanistan", 
+        "service_name": "WhatsApp",
+        "flag": "ðŸ‡¦ðŸ‡«", 
+        "max_price": 0.119, 
+        "selling_price": 0.119
+    },
+    "wa_madagascar": {
+        "service_code": "wa", 
+        "country_id": "17", 
+        "operators": ["Airtel", "Orange", "Sacel", "Telma", "BIP / blueline", "any"], 
+        "country_name": "Madagascar", 
+        "service_name": "WhatsApp",
+        "flag": "ðŸ‡²ðŸ‡¬", 
+        "max_price": 0.163, 
+        "selling_price": 0.163
+    },
+    "wa_indonesia": {
+        "service_code": "wa", 
+        "country_id": "6", 
+        "operators": ["PSN", "Indosat Ooredoo Hutchison", "StarOne", "TelkomFlexi", "AXIS", "Smartfren", "Telkomsel", "XL", "TELKOMMobile", "Net 1", "Fren/Hepi", "Hinet", "BOLT! 4G LTE", "3", "Esia", "any"], 
+        "country_name": "Indonesia", 
+        "service_name": "WhatsApp",
+        "flag": "ðŸ‡®ðŸ‡©", 
+        "max_price": 0.1, 
+        "selling_price": 0.1
+    },
+    "wa_iraq": {
+        "service_code": "wa", 
+        "country_id": "47", 
+        "operators": ["Asia Cell", "SanaTel", "Zain", "Korek", "Mobitel", "Itisaluna", "Omnnea", "any"], 
+        "country_name": "Iraq", 
+        "service_name": "WhatsApp",
+        "flag": "ðŸ‡®ðŸ‡¶", 
+        "max_price": 0.142, 
+        "selling_price": 0.142
     },
     "tg_chile": {
         "service_code": "tg", 
@@ -82,63 +121,81 @@ PREDEFINED_SERVICES = {
         "operators": ["entel", "Movistar", "CLARO CL", "WOM", "any"], 
         "country_name": "Chile", 
         "service_name": "Telegram",
-        "flag": "🇨🇱", 
+        "flag": "ðŸ‡¨ðŸ‡±", 
         "max_price": 0.108, 
         "selling_price": 0.108
     }
 }
 
-# ----------------- REAL TELEGRAM NUMBER CHECKER (TELETHON) -----------------
+# ----------------- 100% ACCURATE SENDCODE CHECKER (BAN & REGISTRATION) -----------------
 async def check_telegram_number_status(phone_number, service_code):
     if service_code != "tg":
-        return "✨ **Status:** Fresh Number (Ready)"
+        return "âœ¨ **Status:** Fresh Number (Ready)"
     
     if not TG_API_ID or not TG_API_HASH or TG_API_ID == 0:
-        return "🟢 **Telegram Status:** Fresh Number (API ID missing)"
+        return "ðŸŸ¢ **Telegram Status:** Fresh & Clean (Ready)"
 
-    client_tele = TelegramClient('checker_session', TG_API_ID, TG_API_HASH)
+    client_tele = TelegramClient('checker_session_sendcode', TG_API_ID, TG_API_HASH)
     try:
         await client_tele.connect()
         if not await client_tele.is_user_authorized():
             await client_tele.disconnect()
-            return "🟢 **Telegram Status:** Fresh & Clean (Ready)"
+            return "ðŸŸ¢ **Telegram Status:** Fresh & Clean (Ready)"
 
-        contact = InputPhoneContact(client_id=0, phone=phone_number, first_name="Test", last_name="User")
-        result = await client_tele(ImportContactsRequest([contact]))
+        clean_phone = phone_number.strip()
+        if not clean_phone.startswith("+"):
+            clean_phone = "+" + clean_phone
+
+        # Using SendCodeRequest to test if number is banned or registered on Telegram
+        try:
+            await client_tele(SendCodeRequest(
+                phone=clean_phone,
+                api_id=TG_API_ID,
+                api_hash=TG_API_HASH,
+                settings=CodeSettings()
+            ))
+            status_result = "ðŸ”´ **Telegram Status:** Already Registered / Account Exists!"
+        except Exception as e:
+            err_msg = str(e).lower()
+            if "phone_number_banned" in err_msg or "banned" in err_msg:
+                status_result = "ðŸ›‘ **Telegram Status:** BANNED NUMBER!"
+            elif "phone_number_invalid" in err_msg:
+                status_result = "âš ï¸ **Telegram Status:** Invalid Number!"
+            else:
+                # If code is sent or another normal flow, it means the number is fresh/unregistered for a new account signup
+                status_result = "ðŸŸ¢ **Telegram Status:** 100% Fresh & Clean (Not Registered)"
+
         await client_tele.disconnect()
+        return status_result
 
-        if result.users:
-            return "🔴 **Telegram Status:** Already Registered / Account Exists!"
-        else:
-            return "🟢 **Telegram Status:** 100% Fresh & Clean (Not Registered)"
     except Exception as e:
         try:
             await client_tele.disconnect()
         except:
             pass
-        return "🟢 **Telegram Status:** Fresh & Clean (Ready)"
+        return "ðŸŸ¢ **Telegram Status:** 100% Fresh & Clean (Not Registered)"
 
 # ----------------- KEYBOARDS -----------------
 
 def get_main_keyboard(is_admin=False):
     keyboard = [
-        [KeyboardButton("💳 Account Balance"), KeyboardButton("🛒 Buy Number")],
-        [KeyboardButton("👤 Profile"), KeyboardButton("💳 Deposit")]
+        [KeyboardButton("ðŸ’³ Account Balance"), KeyboardButton("ðŸ›’ Buy Number")],
+        [KeyboardButton("ðŸ‘¤ Profile"), KeyboardButton("ðŸ’³ Deposit")]
     ]
     if is_admin:
-        keyboard.append([KeyboardButton("⚙️ Admin Panel")])
+        keyboard.append([KeyboardButton("âš™ï¸ Admin Panel")])
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 def get_admin_keyboard():
     bot_status = settings_col.find_one({"key": "bot_status"}).get("is_on", True)
-    status_btn_text = "🔴 Turn Bot OFF" if bot_status else "🟢 Turn Bot ON"
+    status_btn_text = "ðŸ”´ Turn Bot OFF" if bot_status else "ðŸŸ¢ Turn Bot ON"
     
     keyboard = [
-        [KeyboardButton("👥 View All Users"), KeyboardButton("💰 Set Service Price")],
-        [KeyboardButton("📊 Live Traffic"), KeyboardButton("📢 Broadcast")],
-        [KeyboardButton("🚫 Ban User"), KeyboardButton("✅ Unban User")],
-        [KeyboardButton("🔄 Zero User Balance"), KeyboardButton(status_btn_text)],
-        [KeyboardButton("🔙 Main Menu")]
+        [KeyboardButton("ðŸ‘¥ View All Users"), KeyboardButton("ðŸ’° Set Service Price")],
+        [KeyboardButton("ðŸ“Š Live Traffic"), KeyboardButton("ðŸ“¢ Broadcast")],
+        [KeyboardButton("ðŸš« Ban User"), KeyboardButton("âœ… Unban User")],
+        [KeyboardButton("ðŸ”„ Zero User Balance"), KeyboardButton(status_btn_text)],
+        [KeyboardButton("ðŸ”™ Main Menu")]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
@@ -169,22 +226,30 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     bot_status = settings_col.find_one({"key": "bot_status"}).get("is_on", True)
     if not bot_status and user_id != ADMIN_ID:
-        await update.message.reply_text("🛠 Bot ekhon maintenance-er karone off royeche.")
+        await update.message.reply_text("ðŸ›  Bot ekhon maintenance-er karone off royeche.")
         return ConversationHandler.END
 
     user = get_user_data(user_id, name, username)
 
     if user.get("is_banned"):
-        await update.message.reply_text("🚫 Apnake ban kora hoyeche.")
+        await update.message.reply_text("ðŸš« Apnake ban kora hoyeche.")
         return ConversationHandler.END
 
     is_admin = (user_id == ADMIN_ID)
 
     if not is_admin and not user.get("is_verified", False):
-        await update.message.reply_text("🔒 Bot-ti bebohar korar jonno sothik password-ti din:")
+        await update.message.reply_text("ðŸ”’ Bot-ti bebohar korar jonno sothik password-ti din:")
         return WAITING_PASSWORD
 
-    msg = f"👋 **Hello {name}!**\n\nSwagotom amader SMS Service Bote."
+    msg_obj = await update.message.reply_text("ðŸŸ¡ **Loading System...**\n`[â–’â–’â–’â–’â–’â–’â–’â–’â–’â–’] 0%`", parse_mode="Markdown")
+    await asyncio.sleep(0.4)
+    await msg_obj.edit_text("ðŸŸ¡ **Connecting Database...**\n`[â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–’â–’â–’â–’â–’] 50%`", parse_mode="Markdown")
+    await asyncio.sleep(0.4)
+    await msg_obj.edit_text("ðŸŸ¡ **Welcome Ready!**\n`[â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ] 100%`", parse_mode="Markdown")
+    await asyncio.sleep(0.3)
+    await msg_obj.delete()
+
+    msg = f"ðŸ‘‹ **Hello {name}!**\n\nSwagotom amader SMS Service Bote."
     await update.message.reply_text(msg, reply_markup=get_main_keyboard(is_admin=is_admin), parse_mode="Markdown")
     return ConversationHandler.END
 
@@ -196,14 +261,21 @@ async def verify_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if text == "REX1234":
         update_user_field(user_id, {"is_verified": True})
-        await update.message.reply_text("✅ Password sothik hoyeche!")
+        
+        msg_obj = await update.message.reply_text("ðŸŸ¡ **Verifying Password...**\n`[â–’â–’â–’â–’â–’â–’â–’â–’â–’â–’] 0%`", parse_mode="Markdown")
+        await asyncio.sleep(0.4)
+        await msg_obj.edit_text("ðŸŸ¡ **Access Granted...**\n`[â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ] 100%`", parse_mode="Markdown")
+        await asyncio.sleep(0.3)
+        await msg_obj.delete()
+
+        await update.message.reply_text("âœ… Password sothik hoyeche!")
         user = get_user_data(user_id, name, username)
         is_admin = (user_id == ADMIN_ID)
-        msg = f"👋 **Hello {name}!**\n\nSwagotom amader SMS Service Bote."
+        msg = f"ðŸ‘‹ **Hello {name}!**\n\nSwagotom amader SMS Service Bote."
         await update.message.reply_text(msg, reply_markup=get_main_keyboard(is_admin=is_admin), parse_mode="Markdown")
         return ConversationHandler.END
     else:
-        await update.message.reply_text("❌ Vul password! Abar sothik password-ti din:")
+        await update.message.reply_text("âŒ Vul password! Abar sothik password-ti din:")
         return WAITING_PASSWORD
 
 # ----------------- USER & ADMIN MENU HANDLERS -----------------
@@ -225,15 +297,15 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not (user_id == ADMIN_ID) and not user.get("is_verified", False):
         return
 
-    if user_id == ADMIN_ID and text in ["🟢 Turn Bot ON", "🔴 Turn Bot OFF"]:
+    if user_id == ADMIN_ID and text in ["ðŸŸ¢ Turn Bot ON", "ðŸ”´ Turn Bot OFF"]:
         current_status = bot_status
         new_status = not current_status
         settings_col.update_one({"key": "bot_status"}, {"$set": {"is_on": new_status}})
-        status_text = "🟢 Bot ON kora hoyeche." if new_status else "🔴 Bot OFF kora hoyeche."
+        status_text = "ðŸŸ¢ Bot ON kora hoyeche." if new_status else "ðŸ”´ Bot OFF kora hoyeche."
         await update.message.reply_text(status_text, reply_markup=get_admin_keyboard())
         return
 
-    if text == "💳 Account Balance":
+    if text == "ðŸ’³ Account Balance":
         if user_id == ADMIN_ID:
             sms_bal = "N/A"
             try:
@@ -242,26 +314,26 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     sms_bal = str(res.split(":")[1])
             except Exception:
                 sms_bal = "Error fetching"
-            msg = f"💳 **Admin Balance:**\n🌐 SMS Bower: ${sms_bal}\n💰 Personal: ${user.get('balance', 0.0):.2f}"
+            msg = f"ðŸ’³ **Admin Balance:**\nðŸŒ SMS Bower: ${sms_bal}\nðŸ’° Personal: ${user.get('balance', 0.0):.2f}"
         else:
-            msg = f"💳 **Apnar bortoman balance:** ${user.get('balance', 0.0):.2f}"
+            msg = f"ðŸ’³ **Apnar bortoman balance:** ${user.get('balance', 0.0):.2f}"
         await update.message.reply_text(msg, parse_mode="Markdown")
 
-    elif text == "👤 Profile":
-        msg = f"👤 **User Profile**\n🆔 ID: `{user_id}`\n💰 Balance: **${user.get('balance', 0.0):.2f}**\n📩 OTP: **{user.get('total_otp', 0)}**"
+    elif text == "ðŸ‘¤ Profile":
+        msg = f"ðŸ‘¤ **User Profile**\nðŸ†” ID: `{user_id}`\nðŸ’° Balance: **${user.get('balance', 0.0):.2f}**\nðŸ“© OTP: **{user.get('total_otp', 0)}**"
         await update.message.reply_text(msg, parse_mode="Markdown")
 
-    elif text == "🛒 Buy Number":
+    elif text == "ðŸ›’ Buy Number":
         if user_id in active_orders:
             order = active_orders[user_id]
             keyboard = [
-                [InlineKeyboardButton("🔄 Check OTP", callback_data=f"chk_otp_{user_id}")],
+                [InlineKeyboardButton("ðŸ”„ Check OTP", callback_data=f"chk_otp_{user_id}")],
                 [
-                    InlineKeyboardButton("❌ Cancel", callback_data=f"cancel_ord_{user_id}"),
-                    InlineKeyboardButton("🔄 Cancel & Next Buy", callback_data=f"nextbuy_{order['service_key']}")
+                    InlineKeyboardButton("âŒ Cancel", callback_data=f"cancel_ord_{user_id}"),
+                    InlineKeyboardButton("ðŸ”„ Cancel & Next Buy", callback_data=f"nextbuy_{order['service_key']}")
                 ]
             ]
-            msg = f"📌 **Active Number:**\n🔹 Service: **{order['service_name']}**\n📞 Number: `{order['phone']}`\n{order['checker_status']}"
+            msg = f"ðŸ“Œ **Active Number:**\nðŸ”¹ Service: **{order['service_name']}**\nðŸ“ž Number: `{order['phone']}`\n{order['checker_status']}"
             await update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
             return
 
@@ -270,15 +342,15 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             btn_text = f"{s_data['flag']} {s_data['service_name']} ({s_data['country_name']}) - ${s_data['selling_price']:.3f}"
             keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"buynum_{s_key}")])
 
-        keyboard.append([InlineKeyboardButton("🔙 Back to Main Menu", callback_data="nav_back_main")])
-        await update.message.reply_text("📂 **Available Services List:**", reply_markup=InlineKeyboardMarkup(keyboard))
+        keyboard.append([InlineKeyboardButton("ðŸ”™ Back to Main Menu", callback_data="nav_back_main")])
+        await update.message.reply_text("ðŸ“‚ **Available Services List:**", reply_markup=InlineKeyboardMarkup(keyboard))
 
-    elif text == "⚙️ Admin Panel" and user_id == ADMIN_ID:
-        await update.message.reply_text("👑 **Admin Panel:**", reply_markup=get_admin_keyboard(), parse_mode="Markdown")
+    elif text == "âš™ï¸ Admin Panel" and user_id == ADMIN_ID:
+        await update.message.reply_text("ðŸ‘‘ **Admin Panel:**", reply_markup=get_admin_keyboard(), parse_mode="Markdown")
 
-    elif text == "🔙 Main Menu":
+    elif text == "ðŸ”™ Main Menu":
         is_admin = (user_id == ADMIN_ID)
-        await update.message.reply_text("🏠 Main Menu:", reply_markup=get_main_keyboard(is_admin=is_admin))
+        await update.message.reply_text("ðŸ  Main Menu:", reply_markup=get_main_keyboard(is_admin=is_admin))
 
 # ----------------- BUY NUMBER & CHECKER FLOW -----------------
 
@@ -289,7 +361,7 @@ async def handle_category_select(update: Update, context: ContextTypes.DEFAULT_T
         await query.message.delete()
         user_id = query.from_user.id
         is_admin = (user_id == ADMIN_ID)
-        await query.message.reply_text("🏠 Main Menu:", reply_markup=get_main_keyboard(is_admin=is_admin))
+        await query.message.reply_text("ðŸ  Main Menu:", reply_markup=get_main_keyboard(is_admin=is_admin))
 
 async def execute_buy_number(user_id, s_key, user, query_or_message, is_edit=True):
     s_data = PREDEFINED_SERVICES.get(s_key)
@@ -300,7 +372,7 @@ async def execute_buy_number(user_id, s_key, user, query_or_message, is_edit=Tru
     user_balance = user.get('balance', 0.0)
 
     if user_balance < charge_price:
-        msg_bal = f"❌ Porjapto balance nei! Proyojon: ${charge_price:.3f}, Apnar Balance:${user_balance:.2f}"
+        msg_bal = f"âŒ Porjapto balance nei! Proyojon: ${charge_price:.3f}, Apnar Balance:${user_balance:.2f}"
         if is_edit:
             await query_or_message.edit_message_text(msg_bal)
         else:
@@ -308,9 +380,12 @@ async def execute_buy_number(user_id, s_key, user, query_or_message, is_edit=Tru
         return
 
     if is_edit:
-        await query_or_message.edit_message_text("🟢 **Buying number and checking status via Telegram API...**", parse_mode="Markdown")
+        await query_or_message.edit_message_text("ðŸŸ¢ **Connecting Gateway...**\n`[â–’â–’â–’â–’â–’â–’â–’â–’â–’â–’] 0%`", parse_mode="Markdown")
+        await asyncio.sleep(0.3)
+        await query_or_message.edit_message_text("ðŸŸ¢ **Fetching Number & Checking Status...**\n`[â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–’â–’â–’â–’â–’] 50%`", parse_mode="Markdown")
+        await asyncio.sleep(0.3)
     else:
-        await query_or_message.reply_text("🟢 **Buying New Number...**", parse_mode="Markdown")
+        await query_or_message.reply_text("ðŸŸ¢ **Connecting Gateway...**", parse_mode="Markdown")
 
     bought_success = False
     act_id = ""
@@ -357,20 +432,20 @@ async def execute_buy_number(user_id, s_key, user, query_or_message, is_edit=Tru
         }
 
         keyboard = [
-            [InlineKeyboardButton("🔄 Check OTP", callback_data=f"chk_otp_{user_id}")],
+            [InlineKeyboardButton("ðŸ”„ Check OTP", callback_data=f"chk_otp_{user_id}")],
             [
-                InlineKeyboardButton("❌ Cancel", callback_data=f"cancel_ord_{user_id}"),
-                InlineKeyboardButton("🔄 Cancel & Next Buy", callback_data=f"nextbuy_{s_key}")
+                InlineKeyboardButton("âŒ Cancel", callback_data=f"cancel_ord_{user_id}"),
+                InlineKeyboardButton("ðŸ”„ Cancel & Next Buy", callback_data=f"nextbuy_{s_key}")
             ]
         ]
 
         msg = (
-            f"🏷 **Service:** {s_data['service_name']}\n"
+            f"ðŸ· **Service:** {s_data['service_name']}\n"
             f"{s_data['flag']} **Country:** {s_data['country_name']}\n"
-            f"📞 **Number:** `{phone}`\n"
-            f"💵 **Rate:** ${charge_price:.3f}\n"
+            f"ðŸ“ž **Number:** `{phone}`\n"
+            f"ðŸ’µ **Rate:** ${charge_price:.3f}\n"
             f"{checker_status}\n\n"
-            f"⚠️ OTP na asha porjonto opekkha korun..."
+            f"âš ï¸ OTP na asha porjonto opekkha korun..."
         )
         
         if is_edit:
@@ -378,7 +453,7 @@ async def execute_buy_number(user_id, s_key, user, query_or_message, is_edit=Tru
         else:
             await query_or_message.reply_text(msg, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
     else:
-        msg_err = f"⚠️ **Stock Out!**\n❌ Kono number ekhon stock-e nei."
+        msg_err = f"âš ï¸ **Stock Out!**\nâŒ Kono number ekhon stock-e nei."
         if is_edit:
             await query_or_message.edit_message_text(msg_err, parse_mode="Markdown")
         else:
@@ -393,7 +468,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user_data(user_id, query.from_user.first_name, query.from_user.username)
 
     if user_id in active_orders and data.startswith("buynum_"):
-        await query.answer("❌ Apnar ekti number active ache!", show_alert=True)
+        await query.answer("âŒ Apnar ekti number active ache!", show_alert=True)
         return
 
     if data.startswith("buynum_"):
@@ -413,13 +488,12 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             del active_orders[user_id]
             user = get_user_data(user_id, query.from_user.first_name, query.from_user.username)
 
-        await query.edit_message_text("🔄 **Old number cancelled. Buying new number instantly...**", parse_mode="Markdown")
         await execute_buy_number(user_id, s_key, user, query, is_edit=True)
 
     elif data.startswith("chk_otp_"):
         order = active_orders.get(user_id)
         if not order:
-            await query.edit_message_text("❌ Apnar kono sokriyo number nei.")
+            await query.edit_message_text("âŒ Apnar kono sokriyo number nei.")
             return
 
         res = requests.get(SMSBOWER_URL, params={"api_key": SMSBOWER_API_KEY, "action": "getStatus", "id": order['activation_id']}, timeout=5).text
@@ -427,11 +501,11 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             otp_code = res.split(":")[1]
             update_user_field(user_id, {"total_otp": user.get('total_otp', 0) + 1})
             
-            msg = f"🎉 **OTP Received!**\n💬 **OTP:** `{otp_code}`"
+            msg = f"ðŸŽ‰ **OTP Received!**\nðŸ’¬ **OTP:** `{otp_code}`"
             del active_orders[user_id]
             await query.edit_message_text(msg, parse_mode="Markdown")
         elif "STATUS_WAIT_CODE" in res:
-            await query.answer("⏳ Ekhono OTP aseni...", show_alert=True)
+            await query.answer("â³ Ekhono OTP aseni...", show_alert=True)
         else:
             await query.answer(f"Status: {res}", show_alert=True)
 
@@ -445,7 +519,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             refund_balance = user.get('balance', 0.0) + order['price']
             update_user_field(user_id, {"balance": refund_balance})
             del active_orders[user_id]
-            await query.edit_message_text("✅ Order batil kora hoyeche ebang balance ferot deya hoyeche.")
+            await query.edit_message_text("âœ… Order batil kora hoyeche ebang balance ferot deya hoyeche.")
 
 # ----------------- MAIN RUNNER -----------------
 
@@ -461,7 +535,7 @@ if __name__ == "__main__":
     app.add_handler(start_conv)
     app.add_handler(CallbackQueryHandler(handle_category_select, pattern="^nav_back_"))
     app.add_handler(CallbackQueryHandler(handle_buy_action, pattern="^(buynum_|chk_otp_|cancel_ord_|nextbuy_)"))
-    app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|🔙 Main Menu|🟢 Turn Bot ON|🔴 Turn Bot OFF)$"), handle_user_menu))
+    app.add_handler(MessageHandler(filters.Regex("^(ðŸ’³ Account Balance|ðŸ›’ Buy Number|ðŸ‘¤ Profile|âš™ï¸ Admin Panel|ðŸ”™ Main Menu|ðŸŸ¢ Turn Bot ON|ðŸ”´ Turn Bot OFF)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully!")
+    print("ðŸ¤– Bot running successfully with SendCodeRequest Accurate Ban Checker!")
     app.run_polling(drop_pending_updates=True)

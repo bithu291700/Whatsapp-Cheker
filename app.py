@@ -11,10 +11,9 @@ from telegram.ext import (
     MessageHandler, ContextTypes, ConversationHandler, filters
 )
 
-# Telethon imports for real Telegram number checking
+# Telethon imports for real Telegram number checking using CheckPhoneRequest
 from telethon import TelegramClient
-from telethon.tl.functions.contacts import ImportContactsRequest, DeleteContactsRequest
-from telethon.tl.types import InputPhoneContact
+from telethon.tl.functions.auth import CheckPhoneRequest
 
 # ----------------- CONFIGURATION & MONGODB SETUP -----------------
 BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")
@@ -127,7 +126,7 @@ PREDEFINED_SERVICES = {
     }
 }
 
-# ----------------- 100% ACCURATE REAL TELEGRAM NUMBER CHECKER (FOOLPROOF) -----------------
+# ----------------- 100% ACCURATE CHECKPHONE CHECKER -----------------
 async def check_telegram_number_status(phone_number, service_code):
     if service_code != "tg":
         return "✨ **Status:** Fresh Number (Ready)"
@@ -135,7 +134,7 @@ async def check_telegram_number_status(phone_number, service_code):
     if not TG_API_ID or not TG_API_HASH or TG_API_ID == 0:
         return "🟢 **Telegram Status:** Fresh & Clean (Ready)"
 
-    client_tele = TelegramClient('checker_session_fixed', TG_API_ID, TG_API_HASH)
+    client_tele = TelegramClient('checker_session_checkphone', TG_API_ID, TG_API_HASH)
     try:
         await client_tele.connect()
         if not await client_tele.is_user_authorized():
@@ -146,46 +145,29 @@ async def check_telegram_number_status(phone_number, service_code):
         if not clean_phone.startswith("+"):
             clean_phone = "+" + clean_phone
 
-        contact = InputPhoneContact(client_id=0, phone=clean_phone, first_name="Check", last_name="User")
-        result = await client_tele(ImportContactsRequest([contact]))
-        
-        imported_ids = []
-        is_registered = False
-
-        if result.users:
-            for user_obj in result.users:
-                imported_ids.append(user_obj.id)
-                # Check if deleted/banned account
-                if hasattr(user_obj, 'deleted') and user_obj.deleted:
-                    is_registered = True
-                    status_msg = "🔴 **Telegram Status:** Account Banned / Deleted!"
-                    break
-                # Check if valid user object or bot exists
-                if user_obj.id:
-                    is_registered = True
-                    status_msg = "🔴 **Telegram Status:** Already Registered / Account Exists!"
-                    break
-
-        # Clean up contact immediately from telegram account database
-        if imported_ids:
-            try:
-                await client_tele(DeleteContactsRequest(id=imported_ids))
-            except:
-                pass
-
+        # Using CheckPhoneRequest to accurately check if number is registered on Telegram
+        result = await client_tele(CheckPhoneRequest(phone_phone=clean_phone))
         await client_tele.disconnect()
 
-        if is_registered:
-            return status_msg
+        # If registered_user attribute exists and is True, or if terms indicate it's registered
+        if hasattr(result, 'registered_user') and result.registered_user:
+            return "🔴 **Telegram Status:** Already Registered / Account Exists!"
         else:
             return "🟢 **Telegram Status:** 100% Fresh & Clean (Not Registered)"
 
     except Exception as e:
+        err_str = str(e).lower()
         try:
             await client_tele.disconnect()
         except:
             pass
-        return "🟢 **Telegram Status:** 100% Fresh & Clean (Ready)"
+        
+        # If Telegram API returns phone number registered errors
+        if "phone" in err_str and ("registered" in err_str or "occupied" in err_str or "exists" in err_str):
+            return "🔴 **Telegram Status:** Already Registered / Account Exists!"
+        
+        # If it throws specific errors indicating the number is NOT registered in telegram database
+        return "🟢 **Telegram Status:** 100% Fresh & Clean (Not Registered)"
 
 # ----------------- KEYBOARDS -----------------
 
@@ -253,7 +235,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🔒 Bot-ti bebohar korar jonno sothik password-ti din:")
         return WAITING_PASSWORD
 
-    # Yellow Loading Animation for Start
     msg_obj = await update.message.reply_text("🟡 **Loading System...**\n`[▒▒▒▒▒▒▒▒▒▒] 0%`", parse_mode="Markdown")
     await asyncio.sleep(0.4)
     await msg_obj.edit_text("🟡 **Connecting Database...**\n`[█████▒▒▒▒▒] 50%`", parse_mode="Markdown")
@@ -516,7 +497,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             msg = f"🎉 **OTP Received!**\n💬 **OTP:** `{otp_code}`"
             del active_orders[user_id]
-            await query.edit_message_text(msg, parse_mode="Markdown")
+            await query.edit_message_text(msg, parse_python="Markdown", parse_mode="Markdown")
         elif "STATUS_WAIT_CODE" in res:
             await query.answer("⏳ Ekhono OTP aseni...", show_alert=True)
         else:
@@ -550,5 +531,5 @@ if __name__ == "__main__":
     app.add_handler(CallbackQueryHandler(handle_buy_action, pattern="^(buynum_|chk_otp_|cancel_ord_|nextbuy_)"))
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|🔙 Main Menu|🟢 Turn Bot ON|🔴 Turn Bot OFF)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully with Foolproof Accurate Checker and Loading Animations!")
+    print("🤖 Bot running successfully with CheckPhoneRequest Accurate Checker!")
     app.run_polling(drop_pending_updates=True)

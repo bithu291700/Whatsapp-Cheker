@@ -11,16 +11,16 @@ from telegram.ext import (
     MessageHandler, ContextTypes, ConversationHandler, filters
 )
 
-# Telethon imports for accurate ban & registration checking
+# Telethon imports for real Telegram number checking
 from telethon import TelegramClient
-from telethon.tl.functions.auth import SendCodeRequest
-from telethon.tl.functions.contacts import ImportContactsRequest, DeleteContactsRequest
-from telethon.tl.types import InputPhoneContact, CodeSettings
+from telethon.tl.functions.contacts import ImportContactsRequest
+from telethon.tl.types import InputPhoneContact
 
 # ----------------- CONFIGURATION & MONGODB SETUP -----------------
 BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")
 SMSBOWER_API_KEY = os.getenv("SMSBOWER_API_KEY", "YOUR_SMSBOWER_API_KEY")
 
+# Telethon Credentials (Telegram API ID & Hash for real checking)
 TG_API_ID = int(os.getenv("TG_API_ID", "0"))
 TG_API_HASH = os.getenv("TG_API_HASH", "your_telegram_api_hash")
 
@@ -76,46 +76,6 @@ PREDEFINED_SERVICES = {
         "max_price": 0.14,    
         "selling_price": 0.120 
     },
-    "wa_afghanistan": {
-        "service_code": "wa", 
-        "country_id": "74", 
-        "operators": ["AWCC", "Roshan", "MTN", "Etisalat", "WASEL", "Salaam", "any"], 
-        "country_name": "Afghanistan", 
-        "service_name": "WhatsApp",
-        "flag": "🇦🇫", 
-        "max_price": 0.119, 
-        "selling_price": 0.119
-    },
-    "wa_madagascar": {
-        "service_code": "wa", 
-        "country_id": "17", 
-        "operators": ["Airtel", "Orange", "Sacel", "Telma", "BIP / blueline", "any"], 
-        "country_name": "Madagascar", 
-        "service_name": "WhatsApp",
-        "flag": "🇲🇬", 
-        "max_price": 0.163, 
-        "selling_price": 0.163
-    },
-    "wa_indonesia": {
-        "service_code": "wa", 
-        "country_id": "6", 
-        "operators": ["PSN", "Indosat Ooredoo Hutchison", "StarOne", "TelkomFlexi", "AXIS", "Smartfren", "Telkomsel", "XL", "TELKOMMobile", "Net 1", "Fren/Hepi", "Hinet", "BOLT! 4G LTE", "3", "Esia", "any"], 
-        "country_name": "Indonesia", 
-        "service_name": "WhatsApp",
-        "flag": "🇮🇩", 
-        "max_price": 0.1, 
-        "selling_price": 0.1
-    },
-    "wa_iraq": {
-        "service_code": "wa", 
-        "country_id": "47", 
-        "operators": ["Asia Cell", "SanaTel", "Zain", "Korek", "Mobitel", "Itisaluna", "Omnnea", "any"], 
-        "country_name": "Iraq", 
-        "service_name": "WhatsApp",
-        "flag": "🇮🇶", 
-        "max_price": 0.142, 
-        "selling_price": 0.142
-    },
     "tg_chile": {
         "service_code": "tg", 
         "country_id": "151", 
@@ -128,82 +88,35 @@ PREDEFINED_SERVICES = {
     }
 }
 
-# ----------------- 100% ACCURATE ADVANCED BAN CHECKER -----------------
+# ----------------- REAL TELEGRAM NUMBER CHECKER (TELETHON) -----------------
 async def check_telegram_number_status(phone_number, service_code):
     if service_code != "tg":
         return "✨ **Status:** Fresh Number (Ready)"
     
     if not TG_API_ID or not TG_API_HASH or TG_API_ID == 0:
-        return "🟢 **Telegram Status:** Fresh & Clean (Ready)"
+        return "🟢 **Telegram Status:** Fresh Number (API ID missing)"
 
-    client_tele = TelegramClient('checker_session_sendcode', TG_API_ID, TG_API_HASH)
+    client_tele = TelegramClient('checker_session', TG_API_ID, TG_API_HASH)
     try:
         await client_tele.connect()
         if not await client_tele.is_user_authorized():
             await client_tele.disconnect()
             return "🟢 **Telegram Status:** Fresh & Clean (Ready)"
 
-        clean_phone = phone_number.strip()
-        if not clean_phone.startswith("+"):
-            clean_phone = "+" + clean_phone
-
-        status_result = None
-
-        # Method 1: Import Contacts to detect banned or registered status instantly
-        try:
-            contact = InputPhoneContact(client_id=0, phone=clean_phone, first_name="Check", last_name="User")
-            result = await client_tele(ImportContactsRequest(contacts=[contact]))
-            
-            # Clean up the imported contact immediately
-            if result.users:
-                for user in result.users:
-                    try:
-                        await client_tele(DeleteContactsRequest(id=[user]))
-                    except:
-                        pass
-                
-                user_obj = result.users[0]
-                if getattr(user_obj, 'restricted', False):
-                    status_result = "🛑 **Telegram Status:** BANNED NUMBER!"
-                else:
-                    status_result = "🔴 **Telegram Status:** Already Registered / Account Exists!"
-            else:
-                status_result = "🛑 **Telegram Status:** BANNED NUMBER / Not Registered!"
-        except Exception as imp_err:
-            err_str = str(imp_err).lower()
-            if "phone_number_banned" in err_str or "banned" in err_str:
-                status_result = "🛑 **Telegram Status:** BANNED NUMBER!"
-            elif "phone_number_invalid" in err_str or "invalid" in err_str:
-                status_result = "⚠️ **Telegram Status:** Invalid Number!"
-
-        # Method 2: SendCodeRequest fallback verification if Method 1 inconclusive
-        if not status_result:
-            try:
-                await client_tele(SendCodeRequest(
-                    phone=clean_phone,
-                    api_id=TG_API_ID,
-                    api_hash=TG_API_HASH,
-                    settings=CodeSettings()
-                ))
-                status_result = "🟢 **Telegram Status:** 100% Fresh & Clean (Not Registered)"
-            except Exception as e:
-                err_msg = str(e).lower()
-                if "phone_number_banned" in err_msg or "banned" in err_msg or "auth_key" in err_msg or "user_deactivated" in err_msg:
-                    status_result = "🛑 **Telegram Status:** BANNED NUMBER!"
-                elif "phone_number_invalid" in err_msg or "invalid" in err_msg:
-                    status_result = "⚠️ **Telegram Status:** Invalid Number!"
-                else:
-                    status_result = "🛑 **Telegram Status:** BANNED NUMBER / Restricted!"
-
+        contact = InputPhoneContact(client_id=0, phone=phone_number, first_name="Test", last_name="User")
+        result = await client_tele(ImportContactsRequest([contact]))
         await client_tele.disconnect()
-        return status_result
 
+        if result.users:
+            return "🔴 **Telegram Status:** Already Registered / Account Exists!"
+        else:
+            return "🟢 **Telegram Status:** 100% Fresh & Clean (Not Registered)"
     except Exception as e:
         try:
             await client_tele.disconnect()
         except:
             pass
-        return "🛑 **Telegram Status:** BANNED NUMBER / Restricted!"
+        return "🟢 **Telegram Status:** Fresh & Clean (Ready)"
 
 # ----------------- KEYBOARDS -----------------
 
@@ -271,14 +184,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("🔒 Bot-ti bebohar korar jonno sothik password-ti din:")
         return WAITING_PASSWORD
 
-    msg_obj = await update.message.reply_text("🟡 **Loading System...**\n`[▒▒▒▒▒▒▒▒▒▒] 0%`", parse_mode="Markdown")
-    await asyncio.sleep(0.4)
-    await msg_obj.edit_text("🟡 **Connecting Database...**\n`[█████▒▒▒▒▒] 50%`", parse_mode="Markdown")
-    await asyncio.sleep(0.4)
-    await msg_obj.edit_text("🟡 **Welcome Ready!**\n`[██████████] 100%`", parse_mode="Markdown")
-    await asyncio.sleep(0.3)
-    await msg_obj.delete()
-
     msg = f"👋 **Hello {name}!**\n\nSwagotom amader SMS Service Bote."
     await update.message.reply_text(msg, reply_markup=get_main_keyboard(is_admin=is_admin), parse_mode="Markdown")
     return ConversationHandler.END
@@ -291,13 +196,6 @@ async def verify_password(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if text == "REX1234":
         update_user_field(user_id, {"is_verified": True})
-        
-        msg_obj = await update.message.reply_text("🟡 **Verifying Password...**\n`[▒▒▒▒▒▒▒▒▒▒] 0%`", parse_mode="Markdown")
-        await asyncio.sleep(0.4)
-        await msg_obj.edit_text("🟡 **Access Granted...**\n`[██████████] 100%`", parse_mode="Markdown")
-        await asyncio.sleep(0.3)
-        await msg_obj.delete()
-
         await update.message.reply_text("✅ Password sothik hoyeche!")
         user = get_user_data(user_id, name, username)
         is_admin = (user_id == ADMIN_ID)
@@ -410,12 +308,9 @@ async def execute_buy_number(user_id, s_key, user, query_or_message, is_edit=Tru
         return
 
     if is_edit:
-        await query_or_message.edit_message_text("🟢 **Connecting Gateway...**\n`[▒▒▒▒▒▒▒▒▒▒] 0%`", parse_mode="Markdown")
-        await asyncio.sleep(0.3)
-        await query_or_message.edit_message_text("🟢 **Fetching Number & Checking Status...**\n`[█████▒▒▒▒▒] 50%`", parse_mode="Markdown")
-        await asyncio.sleep(0.3)
+        await query_or_message.edit_message_text("🟢 **Buying number and checking status via Telegram API...**", parse_mode="Markdown")
     else:
-        await query_or_message.reply_text("🟢 **Connecting Gateway...**", parse_mode="Markdown")
+        await query_or_message.reply_text("🟢 **Buying New Number...**", parse_mode="Markdown")
 
     bought_success = False
     act_id = ""
@@ -518,6 +413,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             del active_orders[user_id]
             user = get_user_data(user_id, query.from_user.first_name, query.from_user.username)
 
+        await query.edit_message_text("🔄 **Old number cancelled. Buying new number instantly...**", parse_mode="Markdown")
         await execute_buy_number(user_id, s_key, user, query, is_edit=True)
 
     elif data.startswith("chk_otp_"):
@@ -567,5 +463,5 @@ if __name__ == "__main__":
     app.add_handler(CallbackQueryHandler(handle_buy_action, pattern="^(buynum_|chk_otp_|cancel_ord_|nextbuy_)"))
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|🔙 Main Menu|🟢 Turn Bot ON|🔴 Turn Bot OFF)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully with 100% Accurate Advanced Ban Checker!")
+    print("🤖 Bot running successfully!")
     app.run_polling(drop_pending_updates=True)

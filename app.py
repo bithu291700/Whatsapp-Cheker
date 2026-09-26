@@ -62,6 +62,7 @@ PREDEFINED_SERVICES = {
         "country_id": "12", 
         "operators": ["cellular", "any"], 
         "country_name": "USA Virtual", 
+        "service_name": "WhatsApp",
         "flag": "🇺🇸", 
         "max_price": 0.14,    
         "selling_price": 0.120 
@@ -69,8 +70,9 @@ PREDEFINED_SERVICES = {
     "wa_afghanistan": {
         "service_code": "wa", 
         "country_id": "74", 
-        "operators": ["AWCC", "Roshan", "MTN", "Etisalat", "WASEL", "Salaam"], 
+        "operators": ["AWCC", "Roshan", "MTN", "Etisalat", "WASEL", "Salaam", "any"], 
         "country_name": "Afghanistan", 
+        "service_name": "WhatsApp",
         "flag": "🇦🇫", 
         "max_price": 0.119, 
         "selling_price": 0.119
@@ -78,8 +80,9 @@ PREDEFINED_SERVICES = {
     "wa_madagascar": {
         "service_code": "wa", 
         "country_id": "17", 
-        "operators": ["Airtel", "Orange", "Sacel", "Telma", "BIP / blueline"], 
+        "operators": ["Airtel", "Orange", "Sacel", "Telma", "BIP / blueline", "any"], 
         "country_name": "Madagascar", 
+        "service_name": "WhatsApp",
         "flag": "🇲🇬", 
         "max_price": 0.163, 
         "selling_price": 0.163
@@ -89,6 +92,7 @@ PREDEFINED_SERVICES = {
         "country_id": "6", 
         "operators": ["PSN", "Indosat Ooredoo Hutchison", "StarOne", "TelkomFlexi", "AXIS", "Smartfren", "Telkomsel", "XL", "TELKOMMobile", "Net 1", "Fren/Hepi", "Hinet", "BOLT! 4G LTE", "3", "Esia", "any"], 
         "country_name": "Indonesia", 
+        "service_name": "WhatsApp",
         "flag": "🇮🇩", 
         "max_price": 0.1, 
         "selling_price": 0.1
@@ -98,9 +102,20 @@ PREDEFINED_SERVICES = {
         "country_id": "47", 
         "operators": ["Asia Cell", "SanaTel", "Zain", "Korek", "Mobitel", "Itisaluna", "Omnnea", "any"], 
         "country_name": "Iraq", 
+        "service_name": "WhatsApp",
         "flag": "🇮🇶", 
         "max_price": 0.142, 
         "selling_price": 0.142
+    },
+    "tg_chile": {
+        "service_code": "tg", 
+        "country_id": "151", 
+        "operators": ["entel", "Movistar", "CLARO CL", "WOM", "Multikom S.A.", "Telsur", "VTR Móvil", "Celupago S.A.", "Colo-Colo Móvil", "Wanderers Móvil", "Virgin Mobile", "Netline Telefónica Móvil Ltda", "Cibeles Telecom S.A.", "Nomade Telecomunicaciones S.A.", "COMPATEL Chile Limitada", "Empresas Bunker S.A.", "móvil Falabella", "Inversiones Santa Fe Limitada", "Cellplus SpA", "Claro Servicios Empresariales S. A.", "WILL S.A.", "Will", "any"], 
+        "country_name": "Chile", 
+        "service_name": "Telegram",
+        "flag": "🇨🇱", 
+        "max_price": 0.108, 
+        "selling_price": 0.108
     }
 }
 
@@ -289,11 +304,11 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         keyboard = []
         for s_key, s_data in PREDEFINED_SERVICES.items():
-            btn_text = f"{s_data['flag']} {s_data['country_name']} - ${s_data['selling_price']:.3f}"
+            btn_text = f"{s_data['flag']} {s_data['service_name']} ({s_data['country_name']}) - ${s_data['selling_price']:.3f}"
             keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"buynum_{s_key}")])
 
         keyboard.append([InlineKeyboardButton("🔙 Back to Main Menu", callback_data="nav_back_main")])
-        await update.message.reply_text("📂 **Available WhatsApp Services List:**", reply_markup=InlineKeyboardMarkup(keyboard))
+        await update.message.reply_text("📂 **Available Services List:**", reply_markup=InlineKeyboardMarkup(keyboard))
 
     elif text == "⚙️ Admin Panel" and user_id == ADMIN_ID:
         await update.message.reply_text("👑 **Admin Panele Swagotom!**", reply_markup=get_admin_keyboard(), parse_mode="Markdown")
@@ -410,7 +425,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if bought_success:
             new_balance = user_balance - charge_price
             update_user_field(user_id, {"balance": new_balance})
-            service_name = "WhatsApp"
+            service_name = s_data['service_name']
 
             active_orders[user_id] = {
                 "activation_id": act_id,
@@ -502,7 +517,7 @@ async def admin_set_price_start(update: Update, context: ContextTypes.DEFAULT_TY
 
     keyboard = []
     for s_key, s_data in PREDEFINED_SERVICES.items():
-        btn_text = f"{s_data['flag']} {s_data['country_name']} (Selling: ${s_data['selling_price']})"
+        btn_text = f"{s_data['flag']} {s_data['service_name']} ({s_data['country_name']}) [${s_data['selling_price']}]"
         keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"setpr_{s_key}")])
 
     keyboard.append([InlineKeyboardButton("❌ Cancel", callback_data="admin_cancel")])
@@ -521,7 +536,7 @@ async def admin_price_service_selected(update: Update, context: ContextTypes.DEF
     context.user_data['selected_service_key'] = s_key
     s_data = PREDEFINED_SERVICES[s_key]
 
-    msg = f"📝 **{s_data['flag']} {s_data['country_name']}** -er jonno new selling price ($) type korun:"
+    msg = f"📝 **{s_data['flag']} {s_data['service_name']} ({s_data['country_name']})** -er jonno new selling price ($) type korun:"
     await query.edit_message_text(msg, parse_mode="Markdown")
     return WAITING_NEW_PRICE
 
@@ -533,7 +548,7 @@ async def admin_save_new_price(update: Update, context: ContextTypes.DEFAULT_TYP
         PREDEFINED_SERVICES[s_key]['selling_price'] = new_price
         s_data = PREDEFINED_SERVICES[s_key]
 
-        msg = f"✅ Selling Price Updated!\n\n{s_data['flag']} **{s_data['country_name']}** New Selling Price: **${new_price:.3f}**\n(Max Price Limit:${s_data['max_price']:.3f})"
+        msg = f"✅ Selling Price Updated!\n\n{s_data['flag']} **{s_data['service_name']} ({s_data['country_name']})** New Selling Price: **${new_price:.3f}**\n(Max Price Limit:${s_data['max_price']:.3f})"
         await update.message.reply_text(msg, parse_mode="Markdown")
     except ValueError:
         await update.message.reply_text("❌ Shothik songkha likhun. Example: 0.12")
@@ -783,7 +798,7 @@ if __name__ == "__main__":
         fallbacks=[CommandHandler("start", start)]
     )
 
-    deposit_conv = ConversationHandler(
+    deposit_conv =ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^💳 Deposit$"), deposit_start)],
         states={
             WAITING_DEPOSIT_AMOUNT: [
@@ -826,7 +841,7 @@ if __name__ == "__main__":
 
     unban_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^✅ Unban User$"), admin_unban_start)],
-        states={WAITING_UNBAN_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_unban_submit)]},
+        states={WAITING_UNBAN_ID: [MessageHandler(filters.TextView if hasattr(filters, 'TextView') else filters.TEXT & ~filters.COMMAND, admin_unban_submit)]},
         fallbacks=[CommandHandler("start", start)]
     )
 
@@ -850,5 +865,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu|🟢 Turn Bot ON|🔴 Turn Bot OFF)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully with Indonesia & Iraq services added!")
+    print("🤖 Bot running successfully with Telegram Chile service added!")
     app.run_polling(drop_pending_updates=True)

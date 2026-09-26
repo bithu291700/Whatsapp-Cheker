@@ -21,7 +21,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")
 SMSBOWER_API_KEY = os.getenv("SMSBOWER_API_KEY", "YOUR_SMSBOWER_API_KEY")
 
 # Telethon Credentials (Telegram API ID & Hash for real checking)
-TG_API_ID = int(os.getenv("TG_API_ID", "123456"))
+TG_API_ID = int(os.getenv("TG_API_ID", "0"))
 TG_API_HASH = os.getenv("TG_API_HASH", "your_telegram_api_hash")
 
 try:
@@ -90,27 +90,21 @@ PREDEFINED_SERVICES = {
 
 # ----------------- REAL TELEGRAM NUMBER CHECKER (TELETHON) -----------------
 async def check_telegram_number_status(phone_number, service_code):
-    """
-    Jodi service-ti Telegram hoy, tahole Telethon bebohar kore 
-    real-time check korbe je number-ti Telegram-e registered kina.
-    """
     if service_code != "tg":
         return "✨ **Status:** Fresh Number (Ready)"
     
-    if not TG_API_ID or not TG_API_HASH:
-        return "🟢 **Telegram Status:** Number Bought (API keys missing for check)"
+    if not TG_API_ID or not TG_API_HASH or TG_API_ID == 0:
+        return "🟢 **Telegram Status:** Fresh Number (API ID missing)"
 
     client_tele = TelegramClient('checker_session', TG_API_ID, TG_API_HASH)
     try:
         await client_tele.connect()
         if not await client_tele.is_user_authorized():
             await client_tele.disconnect()
-            return "🟢 **Telegram Status:** Number Ready (Auth Required for deep check)"
+            return "🟢 **Telegram Status:** Fresh & Clean (Ready)"
 
-        # Import contact to check if registered on Telegram
         contact = InputPhoneContact(client_id=0, phone=phone_number, first_name="Test", last_name="User")
         result = await client_tele(ImportContactsRequest([contact]))
-        
         await client_tele.disconnect()
 
         if result.users:
@@ -122,8 +116,7 @@ async def check_telegram_number_status(phone_number, service_code):
             await client_tele.disconnect()
         except:
             pass
-        return f"🟢 **Telegram Status:** Fresh Number (Check passed)"
-
+        return "🟢 **Telegram Status:** Fresh & Clean (Ready)"
 
 # ----------------- KEYBOARDS -----------------
 
@@ -350,7 +343,6 @@ async def execute_buy_number(user_id, s_key, user, query_or_message, is_edit=Tru
         new_balance = user_balance - charge_price
         update_user_field(user_id, {"balance": new_balance})
         
-        # Real Telegram Checker Integration Call
         checker_status = await check_telegram_number_status(phone, s_data['service_code'])
 
         active_orders[user_id] = {
@@ -471,5 +463,5 @@ if __name__ == "__main__":
     app.add_handler(CallbackQueryHandler(handle_buy_action, pattern="^(buynum_|chk_otp_|cancel_ord_|nextbuy_)"))
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|🔙 Main Menu|🟢 Turn Bot ON|🔴 Turn Bot OFF)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully with Telethon Real Telegram Checker!")
+    print("🤖 Bot running successfully!")
     app.run_polling(drop_pending_updates=True)

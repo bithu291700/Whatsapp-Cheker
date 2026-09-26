@@ -83,6 +83,24 @@ PREDEFINED_SERVICES = {
         "flag": "🇲🇬", 
         "max_price": 0.163, 
         "selling_price": 0.163
+    },
+    "wa_indonesia": {
+        "service_code": "wa", 
+        "country_id": "6", 
+        "operators": ["PSN", "Indosat Ooredoo Hutchison", "StarOne", "TelkomFlexi", "AXIS", "Smartfren", "Telkomsel", "XL", "TELKOMMobile", "Net 1", "Fren/Hepi", "Hinet", "BOLT! 4G LTE", "3", "Esia", "any"], 
+        "country_name": "Indonesia", 
+        "flag": "🇮🇩", 
+        "max_price": 0.1, 
+        "selling_price": 0.1
+    },
+    "wa_iraq": {
+        "service_code": "wa", 
+        "country_id": "47", 
+        "operators": ["Asia Cell", "SanaTel", "Zain", "Korek", "Mobitel", "Itisaluna", "Omnnea", "any"], 
+        "country_name": "Iraq", 
+        "flag": "🇮🇶", 
+        "max_price": 0.142, 
+        "selling_price": 0.142
     }
 }
 
@@ -832,5 +850,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu|🟢 Turn Bot ON|🔴 Turn Bot OFF)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully with premium yellow & green loading animations!")
+    print("🤖 Bot running successfully with Indonesia & Iraq services added!")
     app.run_polling(drop_pending_updates=True)

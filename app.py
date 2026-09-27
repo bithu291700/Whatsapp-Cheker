@@ -64,7 +64,7 @@ PREDEFINED_SERVICES = {
         "service_name": "WhatsApp",
         "flag": "🇺🇸", 
         "max_price": 0.14,    
-        "selling_price": 0.120 
+        "selling_price": 0.14 
     },
     "wa_afghanistan": {
         "service_code": "wa", 
@@ -94,7 +94,7 @@ PREDEFINED_SERVICES = {
         "service_name": "WhatsApp",
         "flag": "🇮🇩", 
         "max_price": 0.1, 
-        "selling_price": 0.1
+        "selling_price": 0.11
     },
     "wa_iraq": {
         "service_code": "wa", 
@@ -104,7 +104,7 @@ PREDEFINED_SERVICES = {
         "service_name": "WhatsApp",
         "flag": "🇮🇶", 
         "max_price": 0.142, 
-        "selling_price": 0.142
+        "selling_price": 0.15
     },
     "tg_chile": {
         "service_code": "tg", 
@@ -114,7 +114,7 @@ PREDEFINED_SERVICES = {
         "service_name": "Telegram",
         "flag": "🇨🇱", 
         "max_price": 0.108, 
-        "selling_price": 0.108
+        "selling_price": 0.11
     }
 }
 
@@ -304,16 +304,17 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg = "👥 **Total Users List & History:**\n\n"
         for udata in all_users:
             status = "🚫 Banned" if udata.get('is_banned') else "✅ Active"
-            u_name = udata.get('name', 'N/A')
+            u_name = str(udata.get('name', 'N/A')).replace("_", "\\_").replace("*", "\\*")
             u_id = udata.get('user_id')
             u_bal = udata.get('balance', 0.0)
             u_otp = udata.get('total_otp', 0)
             msg += f"• 🆔 `{u_id}` | 👤 {u_name}\n   💰 Bal: ${u_bal:.2f} | 📩 OTP: {u_otp} | [{status}]\n\n"
+            
+            if len(msg) > 3800:
+                await update.message.reply_text(msg, parse_mode="Markdown")
+                msg = ""
         
-        if len(msg) > 4000:
-            for x in range(0, len(msg), 4000):
-                await update.message.reply_text(msg[x:x+4000], parse_mode="Markdown")
-        else:
+        if msg.strip():
             await update.message.reply_text(msg, parse_mode="Markdown")
 
     elif text == "📊 Live Traffic" and user_id == ADMIN_ID:
@@ -491,7 +492,7 @@ async def handle_buy_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
             del active_orders[user_id]
             await query.edit_message_text("✅ Order batil kora hoyeche ebang hold thaka balance ferot deya hoyeche.")
 
-# ----------------- ADMIN CONVERSATIONS (FIXED BUTTON TRIGGERS) -----------------
+# ----------------- ADMIN CONVERSATIONS -----------------
 
 async def admin_set_price_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID: return ConversationHandler.END
@@ -841,7 +842,6 @@ if __name__ == "__main__":
     app.add_handler(CallbackQueryHandler(handle_buy_action, pattern="^(buynum_|chk_otp_|cancel_ord_)"))
     app.add_handler(CallbackQueryHandler(handle_admin_approval, pattern="^(depapp_|deprej_)"))
 
-    # IMPORTANT: "👥 View All Users" er normal handler ekhane thakbe
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu|🟢 Turn Bot ON|🔴 Turn Bot OFF)$"), handle_user_menu))
 
     print("🤖 Bot running successfully with full conflicts fixed!")

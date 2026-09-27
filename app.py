@@ -319,11 +319,21 @@ async def handle_user_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ Kono user nei.")
             return
         
-        msg = "👥 **Total Users List:**\n\n"
+        msg = "👥 **Total Users List & History:**\n\n"
         for udata in all_users:
             status = "🚫 Banned" if udata.get('is_banned') else "✅ Active"
-            msg += f"• `{udata.get('user_id')}` | {udata.get('name')} | Bal: ${udata.get('balance', 0.0):.2f} | [{status}]\n"
-        await update.message.reply_text(msg, parse_mode="Markdown")
+            u_name = udata.get('name', 'N/A')
+            u_id = udata.get('user_id')
+            u_bal = udata.get('balance', 0.0)
+            u_otp = udata.get('total_otp', 0)
+            msg += f"• 🆔 `{u_id}`\n   👤 Name: {u_name}\n   💰 Bal: ${u_bal:.2f} | 📩 OTP: {u_otp} | [{status}]\n\n"
+        
+        # Telegram messages length limit handle korar jonno chunking ba direct send
+        if len(msg) > 4000:
+            for x in range(0, len(msg), 4000):
+                await update.message.reply_text(msg[x:x+4000], parse_mode="Markdown")
+        else:
+            await update.message.reply_text(msg, parse_mode="Markdown")
 
     elif text == "📊 Live Traffic" and user_id == ADMIN_ID:
         recent_traffic = list(traffic_log_col.find().sort("timestamp", -1).limit(10))
@@ -865,5 +875,5 @@ if __name__ == "__main__":
 
     app.add_handler(MessageHandler(filters.Regex("^(💳 Account Balance|🛒 Buy Number|👤 Profile|⚙️ Admin Panel|👥 View All Users|📊 Live Traffic|🔙 Main Menu|🟢 Turn Bot ON|🔴 Turn Bot OFF)$"), handle_user_menu))
 
-    print("🤖 Bot running successfully with Telegram Chile service added!")
+    print("🤖 Bot running successfully with View Users fixed!")
     app.run_polling(drop_pending_updates=True)

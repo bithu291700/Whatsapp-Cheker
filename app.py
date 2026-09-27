@@ -798,7 +798,7 @@ if __name__ == "__main__":
         fallbacks=[CommandHandler("start", start)]
     )
 
-    deposit_conv =ConversationHandler(
+    deposit_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^💳 Deposit$"), deposit_start)],
         states={
             WAITING_DEPOSIT_AMOUNT: [
@@ -841,7 +841,7 @@ if __name__ == "__main__":
 
     unban_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^✅ Unban User$"), admin_unban_start)],
-        states={WAITING_UNBAN_ID: [MessageHandler(filters.TextView if hasattr(filters, 'TextView') else filters.TEXT & ~filters.COMMAND, admin_unban_submit)]},
+        states={WAITING_UNBAN_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_unban_submit)]},
         fallbacks=[CommandHandler("start", start)]
     )
 

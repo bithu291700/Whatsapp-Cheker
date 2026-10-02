@@ -53,6 +53,7 @@ def handle_messages(message):
     if text == "💵 𝗦𝗘𝗟𝗟 𝗗𝗢𝗟𝗟𝗘𝗥":
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("𝗕𝗜𝗡𝗔𝗡𝗖𝗘", callback_data="binance_sell_option"))
+        markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
         
         msg = (
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -63,6 +64,9 @@ def handle_messages(message):
             f"📈 𝗖𝗨𝗥𝗥𝗘𝗡𝗧 𝗥𝗔𝗧𝗘: {DOLAR_RATE} 𝗕𝗗𝗧 / 𝗨𝗦𝗗\n\n"
             f"👇 𝗖𝗟𝗜𝗖𝗞 𝗧𝗛𝗘 𝗕𝗨𝗧𝗧𝗢𝗡 𝗕𝗘𝗟𝗢𝗪:"
         )
+        # Remove reply keyboard when entering sell flow
+        remove_markup = types.ReplyKeyboardRemove()
+        bot.send_message(user_id, "⬇️", reply_markup=remove_markup)
         bot.send_message(user_id, msg, reply_markup=markup)
 
     elif text == "📞 𝗦𝗨𝗣𝗣𝗢𝗥𝗧":
@@ -99,7 +103,6 @@ def handle_messages(message):
             user_state[user_id]["total_taka"] = total_taka
             user_state[user_id]["step"] = "waiting_order_id"
 
-            # Delete the previous "Enter Amount" message
             try:
                 prev_msg_id = user_state[user_id].get("amount_msg_id")
                 if prev_msg_id:
@@ -107,11 +110,13 @@ def handle_messages(message):
             except Exception:
                 pass
 
-            # Delete user's amount text message
             try:
                 bot.delete_message(user_id, message.message_id)
             except Exception:
                 pass
+
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
 
             binance_msg = (
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -124,16 +129,15 @@ def handle_messages(message):
                 f"💎 𝗕𝗜𝗡𝗔𝗡𝗖𝗘 𝗣𝗔𝗬 𝗜𝗗:\n`{BINANCE_ID}`\n\n"
                 f"📥 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗬𝗢𝗨𝗥 𝗢𝗥𝗗𝗘𝗥 𝗜𝗗 (𝗧𝗫𝗜𝗗):"
             )
-            sent_msg = bot.send_message(user_id, binance_msg, parse_mode="Markdown", reply_markup=main_menu())
+            sent_msg = bot.send_message(user_id, binance_msg, parse_mode="Markdown", reply_markup=markup)
             user_state[user_id]["binance_msg_id"] = sent_msg.message_id
         except ValueError:
-            bot.send_message(user_id, "⚠️ 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗔 𝗩𝗔𝗟𝗜𝗗 𝗡𝗨𝗠𝗕𝗘𝗥!", reply_markup=main_menu())
+            bot.send_message(user_id, "⚠️ 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗔 𝗩𝗔𝗟𝗜𝗗 𝗡𝗨𝗠𝗕𝗘𝗥!")
 
     elif user_state.get(user_id, {}).get("step") == "waiting_order_id":
         user_state[user_id]["order_id"] = text
         user_state[user_id]["step"] = "waiting_screenshot"
         
-        # Delete the Binance payment instruction message
         try:
             prev_msg_id = user_state[user_id].get("binance_msg_id")
             if prev_msg_id:
@@ -141,7 +145,6 @@ def handle_messages(message):
         except Exception:
             pass
 
-        # Delete user's order ID text message
         try:
             bot.delete_message(user_id, message.message_id)
         except Exception:
@@ -152,7 +155,7 @@ def handle_messages(message):
             types.InlineKeyboardButton("✅ 𝗧𝗥𝗔𝗡𝗦𝗔𝗖𝗧𝗜𝗢𝗡 𝗜𝗗", callback_data="dummy_tx"),
             types.InlineKeyboardButton("📸 𝗡𝗘𝗫𝗧 𝗦𝗖𝗥𝗘𝗘𝗡𝗦𝗛𝗢𝗧", callback_data="dummy_sc")
         )
-        markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_main"))
+        markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
 
         sent_msg = bot.send_message(
             user_id, 
@@ -169,7 +172,6 @@ def handle_messages(message):
         data = user_state[user_id]
         user_state[user_id]["step"] = "completed"
 
-        # Delete user's bkash number text message
         try:
             bot.delete_message(user_id, message.message_id)
         except Exception:
@@ -215,23 +217,16 @@ def handle_photos(message):
         user_state[user_id]["photo_file_id"] = message.photo[-1].file_id
         user_state[user_id]["step"] = "waiting_bkash"
         
-        # Delete the previous "Transaction ID Received" message with buttons
         try:
             prev_msg_id = user_state[user_id].get("tx_received_msg_id")
             if prev_msg_id:
                 bot.delete_message(user_id, prev_msg_id)
         except Exception:
             pass
-
-        # Delete user's photo message
-        try:
-            bot.delete_message(user_id, message.message_id)
-        except Exception:
-            pass
         
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("💳 𝗔𝗧𝗠 𝗕𝗞𝗔𝗦𝗛", callback_data="atm_bkash"))
-        markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_main"))
+        markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
 
         sent_msg = bot.send_message(
             user_id, 
@@ -251,6 +246,27 @@ def callback_query(call):
     user_id = call.from_user.id
     data = call.data
 
+    if data == "back_to_main_menu":
+        bot.answer_callback_query(call.id, "Returned to Main Menu")
+        user_state.pop(user_id, None)
+        try:
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+        except Exception:
+            pass
+        
+        welcome_text = (
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🤲 𝗔𝗦𝗦𝗔𝗟𝗔𝗠𝗨 𝗔𝗟𝗔𝗜𝗞𝗨𝗠\n"
+            f"👤 𝗜'𝗠 𝗦𝗔𝗜𝗠\n"
+            f"👑 𝗔𝗗𝗠𝗜𝗡 𝗢𝗙 𝗥𝗘𝗫 𝗣𝗥𝗜𝗩𝗔𝗧𝗘 𝗕𝗢𝗧\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"🌟 𝗪𝗘𝗟𝗖𝗢𝗠𝗘 𝗧𝗢 𝗥𝗘𝗫 𝗣𝗥𝗜𝗩𝗔𝗧𝗘 𝗕𝗢𝗧 𝗭𝗢𝗡𝗘!\n"
+            f"💱 𝗥𝗔𝗧𝗘: 1 𝗨𝗦𝗗 = {DOLAR_RATE} 𝗕𝗗𝗧\n\n"
+            f"👇 𝗣𝗟𝗘𝗔𝗦𝗘 𝗦𝗘𝗟𝗘𝗖𝗧 𝗔𝗡 𝗢𝗣𝗧𝗜𝗢𝗡:"
+        )
+        bot.send_message(user_id, welcome_text, reply_markup=main_menu())
+        return
+
     if data == "binance_sell_option":
         bot.answer_callback_query(call.id)
         
@@ -261,12 +277,15 @@ def callback_query(call):
             
         user_state[user_id] = {"step": "waiting_amount"}
         
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
+
         amount_msg = (
             f"💵 𝗘𝗡𝗧𝗘𝗥 𝗔𝗠𝗢𝗨𝗡𝗧 (𝗨𝗦𝗗)\n\n"
             f"💹 𝗖𝗨𝗥𝗥𝗘𝗡𝗧 𝗥𝗔𝗧𝗘: 1 𝗨𝗦𝗗 = {DOLAR_RATE} 𝗕𝗗𝗧\n\n"
             f"👇 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗧𝗛𝗘 𝗧𝗢𝗧𝗔𝗟 𝗗𝗢𝗟𝗟𝗔𝗥𝗦 𝗬𝗢𝗨 𝗪𝗜𝗦𝗛 𝗧𝗢 𝗦𝗘𝗟𝗟:"
         )
-        sent_msg = bot.send_message(user_id, amount_msg)
+        sent_msg = bot.send_message(user_id, amount_msg, reply_markup=markup)
         user_state[user_id]["amount_msg_id"] = sent_msg.message_id
         return
 
@@ -278,10 +297,13 @@ def callback_query(call):
                 bot.delete_message(call.message.chat.id, prev_msg_id)
         except Exception:
             pass
-        bot.send_message(user_id, "📱 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗬𝗢𝗨𝗥 𝗕𝗞𝗔𝗦𝗛 𝗡𝗨𝗠𝗕𝗘𝗥:")
+            
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
+        bot.send_message(user_id, "📱 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗬𝗢𝗨𝗥 𝗕𝗞𝗔𝗦𝗛 𝗡𝗨𝗠𝗕𝗘𝗥:", reply_markup=markup)
         return
 
-    if data in ["dummy_tx", "dummy_sc", "back_main"]:
+    if data in ["dummy_tx", "dummy_sc"]:
         bot.answer_callback_query(call.id)
         return
 

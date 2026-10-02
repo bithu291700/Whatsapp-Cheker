@@ -7,7 +7,7 @@ TOKEN = os.environ.get('BOT_TOKEN')
 ADMIN_ID = 7388500439          
 BINANCE_ID = "123456789"       
 ADMIN_USERNAME = "SAIM_X9"     
-DOLAR_RATE = 119.0             
+DOLAR_RATE = 120.0             
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -30,14 +30,14 @@ def send_welcome(message):
     
     user_state.pop(message.from_user.id, None)
     welcome_text = (
-        f"🌙 𝗔𝗦𝗦𝗔𝗟𝗔𝗠𝗨 𝗔𝗟𝗔𝗜𝗞𝗨𝗠\n"
-        f"👤 𝗜'𝗠 𝗦𝗔𝗜𝗠\n"
-        f"👑 𝗔𝗗𝗠𝗜𝗡 𝗢𝗙 𝗥𝗘𝗫 𝗣𝗥𝗜𝗩𝗔𝗧𝗘 𝗕𝗢𝗧 ⚡\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🌟 𝗪𝗘𝗟𝗖𝗢𝗠𝗘 𝗧𝗢 𝗥𝗘𝗫 𝗣𝗥𝗜𝗩𝗔𝗧𝗘 𝗕𝗢𝗧 𝗭𝗢𝗡𝗘!\n"
-        f"💱 𝗥𝗔𝗧𝗘: 1 𝗨𝗦𝗗 = {DOLAR_RATE} 𝗧𝗔𝗞𝗔\n"
+        f"🤲 𝗔𝗦𝗦𝗔𝗟𝗔𝗠𝗨 𝗔𝗟𝗔𝗜𝗞𝗨𝗠\n"
+        f"👤 𝗜'𝗠 𝗦𝗔𝗜𝗠\n"
+        f"👑 𝗔𝗗𝗠𝗜𝗡 𝗢𝗙 𝗥𝗘𝗫 𝗣𝗥𝗜𝗩𝗔𝗧𝗘 𝗕𝗢𝗧\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"👇 𝗔𝗣𝗡𝗔𝗥 𝗣𝗥𝗢𝗬𝗢𝗝𝗢𝗡𝗜𝗢 𝗢𝗣𝗧𝗜𝗢𝗡-𝗧𝗜 𝗡𝗜𝗖𝗛𝗘 𝗦𝗘𝗟𝗘𝗖𝗧 𝗞𝗢𝗥𝗨𝗡:"
+        f"🌟 𝗪𝗘𝗟𝗖𝗢𝗠𝗘 𝗧𝗢 𝗥𝗘𝗫 𝗣𝗥𝗜𝗩𝗔𝗧𝗘 𝗕𝗢𝗧 𝗭𝗢𝗡𝗘!\n"
+        f"💱 𝗥𝗔𝗧𝗘: 1 𝗨𝗦𝗗 = {DOLAR_RATE} 𝗕𝗗𝗧\n\n"
+        f"👇 𝗣𝗟𝗘𝗔𝗦𝗘 𝗦𝗘𝗟𝗘𝗖𝗧 𝗔𝗡 𝗢𝗣𝗧𝗜𝗢𝗡:"
     )
     bot.send_message(message.chat.id, welcome_text, reply_markup=main_menu())
 
@@ -55,13 +55,13 @@ def handle_messages(message):
         markup.add(types.InlineKeyboardButton("𝗕𝗜𝗡𝗔𝗡𝗖𝗘", callback_data="binance_sell_option"))
         
         msg = (
-            f"🌙 𝗔𝗦𝗦𝗔𝗟𝗔𝗠𝗨 𝗔𝗟𝗔𝗜𝗞𝗨𝗠\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🤲 𝗔𝗦𝗦𝗔𝗟𝗔𝗠𝗨 𝗔𝗟𝗔𝗜𝗞𝗨𝗠\n"
             f"👤 𝗜'𝗠 𝗦𝗔𝗜𝗠\n"
-            f"👑 𝗔𝗗𝗠𝗜𝗡 𝗢𝗙 𝗥𝗘𝗫 𝗣𝗥𝗜𝗩𝗔𝗧𝗘 𝗕𝗢𝗧 ⚡\n\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"📈 𝗥𝗔𝗧𝗘: {DOLAR_RATE} 𝗧𝗔𝗞𝗔 / 𝗨𝗦𝗗\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"👇 𝗗𝗢𝗬𝗔 𝗞𝗢𝗥𝗘 𝗡𝗜𝗖𝗛𝗘𝗥 𝗕𝗨𝗧𝗧𝗢𝗡-𝗘 𝗖𝗟𝗜𝗖𝗞 𝗞𝗢𝗥𝗨𝗡:"
+            f"👑 𝗔𝗗𝗠𝗜𝗡 𝗢𝗙 𝗥𝗘𝗫 𝗣𝗥𝗜𝗩𝗔𝗧𝗘 𝗕𝗢𝗧\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"📈 𝗖𝗨𝗥𝗥𝗘𝗡𝗧 𝗥𝗔𝗧𝗘: {DOLAR_RATE} 𝗕𝗗𝗧 / 𝗨𝗦𝗗\n\n"
+            f"👇 𝗖𝗟𝗜𝗖𝗞 𝗧𝗛𝗘 𝗕𝗨𝗧𝗧𝗢𝗡 𝗕𝗘𝗟𝗢𝗪:"
         )
         bot.send_message(user_id, msg, reply_markup=markup)
 
@@ -69,14 +69,13 @@ def handle_messages(message):
         user_state.pop(user_id, None)
         support_msg = (
             f"🛠 𝗖𝗨𝗦𝗧𝗢𝗠𝗘𝗥 𝗦𝗨𝗣𝗣𝗢𝗥𝗧 & 𝗛𝗘𝗟𝗣 𝗗𝗘𝗦𝗞\n\n"
-            f"𝗝𝗘𝗞𝗢𝗡𝗢 𝗣𝗥𝗢𝗬𝗢𝗝𝗢𝗡𝗘 𝗔𝗠𝗔𝗗𝗘𝗥 𝗢𝗙𝗙𝗜𝗖𝗜𝗔𝗟 𝗔𝗗𝗠𝗜𝗡-𝗘𝗥 𝗦𝗔𝗧𝗛𝗘 𝗝𝗢𝗚𝗔𝗝𝗢𝗚 𝗞𝗢𝗥𝗨𝗡:\n\n"
-            f"👤 𝗔𝗗𝗠𝗜𝗡 𝗨𝗦𝗘𝗥𝗡𝗔𝗠𝗘: @{ADMIN_USERNAME}"
+            f"𝗔𝗗𝗠𝗜𝗡 𝗨𝗦𝗘𝗥𝗡𝗔𝗠𝗘: @{ADMIN_USERNAME}"
         )
         bot.send_message(user_id, support_msg, reply_markup=main_menu())
 
     elif text == "👑 𝗔𝗗𝗠𝗜𝗡 𝗣𝗔𝗡𝗘𝗟":
         if user_id != ADMIN_ID:
-            bot.send_message(user_id, f"❌ 𝗔𝗣𝗡𝗔𝗥 𝗘𝗜 𝗣𝗔𝗡𝗘𝗟 𝗕𝗔𝗕𝗢𝗛𝗔𝗥 𝗞𝗢𝗥𝗔𝗥 𝗣𝗘𝗥𝗠𝗜𝗦𝗦𝗜𝗢𝗡 𝗡𝗘𝗜!\n\n𝗧𝗘𝗟𝗘𝗚𝗥𝗔𝗠 𝗨𝗦𝗘𝗥 𝗜𝗗: {user_id}", reply_markup=main_menu())
+            bot.send_message(user_id, f"❌ 𝗣𝗘𝗥𝗠𝗜𝗦𝗦𝗜𝗢𝗡 𝗗𝗘𝗡𝗜𝗘𝗗!\n\n𝗨𝗦𝗘𝗥 𝗜𝗗: {user_id}", reply_markup=main_menu())
             return
         
         admin_markup = types.InlineKeyboardMarkup(row_width=2)
@@ -85,12 +84,12 @@ def handle_messages(message):
             types.InlineKeyboardButton("💱 𝗥𝗔𝗧𝗘 𝗖𝗛𝗔𝗡𝗚𝗘", callback_data="admin_rate"),
             types.InlineKeyboardButton("🔄 𝗕𝗢𝗧 𝗢𝗡/𝗢𝗙𝗙", callback_data="admin_toggle")
         )
-        bot.send_message(user_id, "👑 𝗔𝗗𝗠𝗜𝗡 𝗖𝗢𝗡𝗧𝗥𝗢𝗟 𝗣𝗔𝗡𝗘𝗟\n\n𝗡𝗜𝗖𝗛𝗘𝗥 𝗢𝗣𝗧𝗜𝗢𝗡-𝗚𝗨𝗟𝗢 𝗧𝗛𝗘𝗞𝗘 𝗞𝗔𝗝 𝗦𝗘𝗟𝗘𝗖𝗧 𝗞𝗢𝗥𝗨𝗡:", reply_markup=admin_markup)
+        bot.send_message(user_id, "👑 𝗔𝗗𝗠𝗜𝗡 𝗖𝗢𝗡𝗧𝗥𝗢𝗟 𝗣𝗔𝗡𝗘𝗟", reply_markup=admin_markup)
 
     elif user_state.get(user_id, {}).get("step") == "waiting_broadcast":
         if user_id == ADMIN_ID:
             user_state.pop(user_id, None)
-            bot.send_message(user_id, f"✅ 𝗕𝗥𝗢𝗔𝗗𝗖𝗔𝗦𝗧 𝗦𝗛𝗢𝗙𝗢𝗟𝗩𝗔𝗕𝗘 𝗦𝗢𝗠𝗣𝗢𝗡𝗡𝗢 𝗛𝗢𝗬𝗘𝗖𝗛𝗘!\n\n𝗕𝗔𝗥𝗧𝗔:\n{text}", reply_markup=main_menu())
+            bot.send_message(user_id, f"✅ 𝗕𝗥𝗢𝗔𝗗𝗖𝗔𝗦𝗧 𝗦𝗘𝗡𝗧!\n\n{text}", reply_markup=main_menu())
 
     elif user_state.get(user_id, {}).get("step") == "waiting_amount":
         try:
@@ -106,22 +105,19 @@ def handle_messages(message):
                 pass
 
             binance_msg = (
-                f"🌙 𝗔𝗦𝗦𝗔𝗟𝗔𝗠𝗨 𝗔𝗟𝗔𝗜𝗞𝗨𝗠\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"🤲 𝗔𝗦𝗦𝗔𝗟𝗔𝗠𝗨 𝗔𝗟𝗔𝗜𝗞𝗨𝗠\n"
                 f"👤 𝗜'𝗠 𝗦𝗔𝗜𝗠\n"
-                f"👑 𝗔𝗗𝗠𝗜𝗡 𝗢𝗙 𝗥𝗘𝗫 𝗣𝗥𝗜𝗩𝗔𝗧𝗘 𝗕𝗢𝗧 ⚡\n\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"✅ 𝗦𝗘𝗟𝗟 𝗞𝗢𝗥𝗖𝗛𝗘𝗡: {amount} 𝗨𝗦𝗗\n"
-                f"💰 𝗔𝗣𝗡𝗜 𝗣𝗔𝗕𝗘𝗡: {total_taka} 𝗧𝗔𝗞𝗔\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"💎 𝗣𝗔𝗬𝗠𝗘𝗡𝗧 𝗡𝗜𝗥𝗗𝗘𝗦𝗛𝗜𝗞𝗔:\n"
-                f"𝗡𝗜𝗖𝗛𝗘𝗥 𝗕𝗜𝗡𝗔𝗡𝗖𝗘 𝗣𝗔𝗬 𝗜𝗗-𝗧𝗘 𝗗𝗢𝗟𝗟𝗔𝗥 𝗦𝗘𝗡𝗗 𝗞𝗢𝗥𝗨𝗡:\n\n"
-                f"🆔 𝗕𝗜𝗡𝗔𝗡𝗖𝗘 𝗣𝗔𝗬 𝗜𝗗: `{BINANCE_ID}`\n"
+                f"👑 𝗔𝗗𝗠𝗜𝗡 𝗢𝗙 𝗥𝗘𝗫 𝗣𝗥𝗜𝗩𝗔𝗧𝗘 𝗕𝗢𝗧\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-                f"📥 𝗗𝗢𝗟𝗟𝗔𝗥 𝗣𝗔𝗧𝗛𝗔𝗡𝗢𝗥 𝗣𝗢𝗥 𝗢𝗥𝗗𝗘𝗥 𝗜𝗗 (𝗧𝗫𝗜𝗗) 𝗧𝗜 𝗘𝗞𝗛𝗔𝗡𝗘 𝗟𝗜𝗞𝗛𝗘 𝗣𝗔𝗧𝗛𝗔𝗡:"
+                f"✅ 𝗦𝗘𝗟𝗟𝗜𝗡𝗚: {amount} 𝗨𝗦𝗗\n"
+                f"💰 𝗬𝗢𝗨 𝗪𝗜𝗟𝗟 𝗚𝗘𝗧: {total_taka} 𝗕𝗗𝗧\n\n"
+                f"💎 𝗕𝗜𝗡𝗔𝗡𝗖𝗘 𝗣𝗔𝗬 𝗜𝗗:\n`{BINANCE_ID}`\n\n"
+                f"📥 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗬𝗢𝗨𝗥 𝗢𝗥𝗗𝗘𝗥 𝗜𝗗 (𝗧𝗫𝗜𝗗):"
             )
             bot.send_message(user_id, binance_msg, parse_mode="Markdown", reply_markup=main_menu())
         except ValueError:
-            bot.send_message(user_id, "⚠️ 𝗗𝗢𝗬𝗔 𝗞𝗢𝗥𝗘 𝗦𝗢𝗧𝗛𝗜𝗞 𝗦𝗢𝗡𝗚𝗞𝗛𝗔 𝗟𝗜𝗞𝗛𝗨𝗡 (𝗝𝗘𝗠𝗢𝗡: 10 𝗕𝗔 20)", reply_markup=main_menu())
+            bot.send_message(user_id, "⚠️ 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗔 𝗩𝗔𝗟𝗜𝗗 𝗡𝗨𝗠𝗕𝗘𝗥!", reply_markup=main_menu())
 
     elif user_state.get(user_id, {}).get("step") == "waiting_order_id":
         user_state[user_id]["order_id"] = text
@@ -132,10 +128,20 @@ def handle_messages(message):
         except Exception:
             pass
 
+        markup = types.InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            types.InlineKeyboardButton("✅ 𝗧𝗥𝗔𝗡𝗦𝗔𝗖𝗧𝗜𝗢𝗡 𝗜𝗗", callback_data="dummy_tx"),
+            types.InlineKeyboardButton("📸 𝗡𝗘𝗫𝗧 𝗦𝗖𝗥𝗘𝗘𝗡𝗦𝗛𝗢𝗧", callback_data="dummy_sc")
+        )
+        markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_main"))
+
         bot.send_message(
             user_id, 
-            "✅ 𝗢𝗥𝗗𝗘𝗥 𝗜𝗗 𝗚𝗥𝗢𝗛𝗢𝗡 𝗞𝗢𝗥𝗔 𝗛𝗢𝗬𝗘𝗖𝗛𝗘!\n\n📸 𝗘𝗞𝗛𝗢𝗡 𝗔𝗣𝗡𝗔𝗥 𝗕𝗜𝗡𝗔𝗡𝗖𝗘 𝗣𝗔𝗬𝗠𝗘𝗡𝗧-𝗘𝗥 𝗦𝗖𝗥𝗘𝗘𝗡𝗦𝗛𝗢𝗧 𝗖𝗛𝗢𝗕𝗜 𝗔𝗞𝗔𝗥𝗘 𝗣𝗔𝗧𝗛𝗔𝗡:", 
-            reply_markup=main_menu()
+            "━━━━━━━━━━━━━\n"
+            "✅ 𝗧𝗥𝗔𝗡𝗦𝗔𝗖𝗧𝗜𝗢𝗡 𝗜𝗗 𝗥𝗘𝗖𝗘𝗜𝗩𝗘𝗗!\n"
+            "━━━━━━━━━━━━━\n\n"
+            "📸 𝗡𝗢𝗪 𝗣𝗟𝗘𝗔𝗦𝗘 𝗨𝗣𝗟𝗢𝗔𝗗 𝗧𝗛𝗘 𝗣𝗔𝗬𝗠𝗘𝗡𝗧 𝗦𝗖𝗥𝗘𝗘𝗡𝗦𝗛𝗢𝗧 👇", 
+            reply_markup=markup
         )
 
     elif user_state.get(user_id, {}).get("step") == "waiting_bkash":
@@ -144,23 +150,21 @@ def handle_messages(message):
         user_state[user_id]["step"] = "completed"
 
         summary_msg = (
-            f"🌙 𝗔𝗦𝗦𝗔𝗟𝗔𝗠𝗨 𝗔𝗟𝗔𝗜𝗞𝗨𝗠\n"
+            f"━━━━━━━━━━━━━\n"
+            f"⏳ 𝗥𝗘𝗤𝗨𝗘𝗦𝗧 𝗦𝗨𝗕𝗠𝗜𝗧𝗧𝗘𝗗\n"
+            f"━━━━━━━━━━━━━\n"
+            f"✅ 𝗣𝗟𝗘𝗔𝗦𝗘 𝗦𝗧𝗔𝗬 𝗢𝗡𝗟𝗜𝗡𝗘. 𝗬𝗢𝗨𝗥 𝗣𝗔𝗬𝗠𝗘𝗡𝗧 𝗪𝗜𝗟𝗟 𝗕𝗘 𝗦𝗘𝗡𝗧 𝗧𝗢 𝗬𝗢𝗨𝗥 𝗔𝗖𝗖𝗢𝗨𝗡𝗧 𝗦𝗛𝗢𝗥𝗧𝗟𝗬 𝗪𝗜𝗧𝗛𝗜𝗡 𝗔 𝗙𝗘𝗪 𝗠𝗜𝗡𝗨𝗧𝗘𝗦.\n"
+            f"━━━━━━━━━━━━━\n\n"
+            f"┏━━━━━━━ 🌙 ━━━━━━━┓\n"
+            f"🤲 𝗔𝗦𝗦𝗔𝗟𝗔𝗠𝗨 𝗔𝗟𝗔𝗜𝗞𝗨𝗠\n"
             f"👤 𝗜'𝗠 𝗦𝗔𝗜𝗠\n"
-            f"👑 𝗔𝗗𝗠𝗜𝗡 𝗢𝗙 𝗥𝗘𝗫 𝗣𝗥𝗜𝗩𝗔𝗧𝗘 𝗕𝗢𝗧 ⚡\n\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"🎉 𝗔𝗣𝗡𝗔𝗥 𝗢𝗥𝗗𝗘𝗥 𝗦𝗨𝗕𝗠𝗜𝗧 𝗛𝗢𝗬𝗘𝗖𝗛𝗘!\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"💵 𝗗𝗢𝗟𝗟𝗔𝗥: {data['amount']} 𝗨𝗦𝗗\n"
-            f"💰 𝗧𝗔𝗞𝗔: {data['total_taka']} 𝗕𝗗𝗧\n"
-            f"🆔 𝗢𝗥𝗗𝗘𝗥 𝗜𝗗: {data['order_id']}\n"
-            f"📱 𝗕𝗞𝗔𝗦𝗛 𝗡𝗨𝗠𝗕𝗘𝗥: {data['bkash_number']}\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"⏳ 15 𝗠𝗜𝗡 𝗢𝗣𝗘𝗞𝗞𝗛𝗔 𝗞𝗢𝗥𝗨𝗡. 𝗣𝗔𝗬𝗠𝗘𝗡𝗧 𝗦𝗢𝗠𝗣𝗢𝗡𝗡𝗢 𝗛𝗢𝗟𝗘 𝗦𝗠𝗦 𝗣𝗔𝗕𝗘𝗡."
+            f"👑 𝗔𝗗𝗠𝗜𝗡 𝗢𝗙 𝗥𝗘𝗫 𝗣𝗥𝗜𝗩𝗔𝗧𝗘 𝗕𝗢𝗧\n"
+            f"┗━━━━━━━ ⚡ ━━━━━━━┛"
         )
         bot.send_message(user_id, summary_msg, reply_markup=main_menu())
 
         admin_notification = (
-            f"🚨 𝗡𝗢𝗧𝗨𝗡 𝗗𝗢𝗟𝗟𝗔𝗥 𝗦𝗘𝗟𝗟 𝗢𝗥𝗗𝗘𝗥 𝗘𝗦𝗘𝗖𝗛𝗘! 🚨\n\n"
+            f"🚨 𝗡𝗘𝗪 𝗗𝗢𝗟𝗟𝗔𝗥 𝗦𝗘𝗟𝗟 𝗢𝗥𝗗𝗘𝗥! 🚨\n\n"
             f"👤 𝗨𝗦𝗘𝗥 𝗜𝗗: {user_id}\n"
             f"💵 𝗗𝗢𝗟𝗟𝗔𝗥: {data['amount']} 𝗨𝗦𝗗\n"
             f"💱 𝗧𝗔𝗞𝗔: {data['total_taka']} 𝗕𝗗𝗧\n"
@@ -170,7 +174,7 @@ def handle_messages(message):
         admin_markup = types.InlineKeyboardMarkup(row_width=2)
         admin_markup.add(
             types.InlineKeyboardButton("✅ 𝗔𝗣𝗣𝗥𝗢𝗩𝗘", callback_data=f"app_{user_id}"),
-            types.InlineKeyboardButton("❌ 𝗖𝗔𝗡𝗖𝗘𝗟", callback_data=f"rej_{user_id}")
+            types.InlineKeyboardButton("❌ 𝗥𝗘𝗝𝗘𝗖𝗧", callback_data=f"rej_{user_id}")
         )
         
         if data.get("photo_file_id"):
@@ -190,11 +194,17 @@ def handle_photos(message):
         except Exception:
             pass
         
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("💳 𝗔𝗧𝗠 𝗕𝗞𝗔𝗦𝗛", callback_data="atm_bkash"))
+        markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_main"))
+
         bot.send_message(
             user_id, 
-            "✅ 𝗦𝗖𝗥𝗘𝗘𝗡𝗦𝗛𝗢𝗧 𝗦𝗢𝗡𝗚𝗥𝗢𝗞𝗞𝗛𝗢𝗡 𝗞𝗢𝗥𝗔 𝗛𝗢𝗬𝗘𝗖𝗛𝗘!\n\n"
-            "💳 𝗘𝗞𝗛𝗢𝗡 𝗔𝗣𝗡𝗔𝗥 𝗝𝗘 𝗕𝗞𝗔𝗦𝗛 𝗡𝗨𝗠𝗕𝗘𝗥-𝗘 𝗧𝗔𝗞𝗔 𝗡𝗜𝗧𝗘 𝗖𝗛𝗔𝗡 𝗧𝗔 𝗡𝗜𝗖𝗛𝗘 𝗟𝗜𝗞𝗛𝗘 𝗣𝗔𝗧𝗛𝗔𝗡:",
-            reply_markup=main_menu()
+            "━━━━━━━━━━━━━\n"
+            "🏦 𝗥𝗘𝗖𝗘𝗜𝗩𝗘 𝗠𝗢𝗡𝗘𝗬 𝗩𝗜𝗔\n"
+            "━━━━━━━━━━━━━\n"
+            "👇 𝗦𝗘𝗟𝗘𝗖𝗧 𝗪𝗛𝗘𝗥𝗘 𝗬𝗢𝗨 𝗪𝗔𝗡𝗧 𝗧𝗢 𝗥𝗘𝗖𝗘𝗜𝗩𝗘 𝗬𝗢𝗨𝗥 𝗙𝗨𝗡𝗗𝗦:",
+            reply_markup=markup
         )
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -213,29 +223,44 @@ def callback_query(call):
             
         user_state[user_id] = {"step": "waiting_amount"}
         
-        bot.send_message(
-            user_id, 
-            "✏️ 𝗔𝗣𝗡𝗜 𝗞𝗢𝗧𝗢 𝗗𝗢𝗟𝗟𝗔𝗥 (𝗨𝗦𝗗) 𝗦𝗘𝗟𝗟 𝗞𝗢𝗥𝗧𝗘 𝗖𝗛𝗔𝗡?\n"
-            "𝗗𝗢𝗬𝗔 𝗞𝗢𝗥𝗘 𝗦𝗛𝗨𝗗𝗛𝗨 𝗦𝗢𝗡𝗚𝗞𝗛𝗔-𝗧𝗜 (𝗝𝗘𝗠𝗢𝗡: 10 𝗕𝗔 50) 𝗡𝗜𝗖𝗛𝗘 𝗟𝗜𝗞𝗛𝗘 𝗣𝗔𝗧𝗛𝗔𝗡:"
+        amount_msg = (
+            f"💵 𝗘𝗡𝗧𝗘𝗥 𝗔𝗠𝗢𝗨𝗡𝗧 (𝗨𝗦𝗗)\n\n"
+            f"💹 𝗖𝗨𝗥𝗥𝗘𝗡𝗧 𝗥𝗔𝗧𝗘: 1 𝗨𝗦𝗗 = {DOLAR_RATE} 𝗕𝗗𝗧\n\n"
+            f"👇 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗧𝗛𝗘 𝗧𝗢𝗧𝗔𝗟 𝗗𝗢𝗟𝗟𝗔𝗥𝗦 𝗬𝗢𝗨 𝗪𝗜𝗦𝗛 𝗧𝗢 𝗦𝗘𝗟𝗟:"
         )
+        bot.send_message(user_id, amount_msg)
+        return
+
+    if data == "atm_bkash":
+        bot.answer_callback_query(call.id)
+        try:
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+        except Exception:
+            pass
+        bot.send_message(user_id, "📱 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗬𝗢𝗨𝗥 𝗕𝗞𝗔𝗦𝗛 𝗡𝗨𝗠𝗕𝗘𝗥:")
+        return
+
+    if data in ["dummy_tx", "dummy_sc", "back_main"]:
+        bot.answer_callback_query(call.id)
         return
 
     if user_id != ADMIN_ID:
-        bot.answer_callback_query(call.id, "❌ 𝗘𝗜 𝗞𝗔𝗝 𝗞𝗢𝗥𝗔𝗥 𝗣𝗘𝗥𝗠𝗜𝗦𝗦𝗜𝗢𝗡 𝗔𝗣𝗡𝗔𝗥 𝗡𝗘𝗜!", show_alert=True)
+        bot.answer_callback_query(call.id, "❌ 𝗣𝗘𝗥𝗠𝗜𝗦𝗦𝗜𝗢𝗡 𝗗𝗘𝗡𝗜𝗘𝗗!", show_alert=True)
         return
 
     if data.startswith("app_"):
         target_user = int(data.split("_")[1])
-        bot.answer_callback_query(call.id, "𝗢𝗥𝗗𝗘𝗥 𝗔𝗣𝗣𝗥𝗢𝗩𝗘 𝗞𝗢𝗥𝗔 𝗛𝗢𝗬𝗘𝗖𝗛𝗘!")
-        bot.send_message(
-            target_user, 
-            "🎉 𝗔𝗦𝗦𝗔𝗟𝗔𝗠𝗨 𝗔𝗟𝗔𝗜𝗞𝗨𝗠\n"
-            "👤 𝗜'𝗠 𝗦𝗔𝗜𝗠\n"
-            "👑 𝗔𝗗𝗠𝗜𝗡 𝗢𝗙 𝗥𝗘𝗫 𝗣𝗥𝗜𝗩𝗔𝗧𝗘 𝗕𝗢𝗧 ⚡\n\n"
-            "✅ 𝗣𝗔𝗬𝗠𝗘𝗡𝗧 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟\n"
-            "𝗥𝗘𝗤𝗨𝗘𝗦𝗧𝗘𝗗 𝗙𝗨𝗡𝗗𝗦 𝗛𝗔𝗩𝗘 𝗕𝗘𝗘𝗡 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟𝗟𝗬 𝗦𝗘𝗡𝗧 𝗧𝗢 𝗬𝗢𝗨𝗥 𝗣𝗥𝗢𝗩𝗜𝗗𝗘𝗗 𝗡𝗨𝗠𝗕𝗘𝗥.", 
-            reply_markup=main_menu()
+        bot.answer_callback_query(call.id, "Order approved!")
+        
+        success_msg = (
+            f"━━━━━━━━━━━━━\n"
+            f"✅ 𝗣𝗔𝗬𝗠𝗘𝗡𝗧 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟\n"
+            f"━━━━━━━━━━━━━\n"
+            f"💸 𝗥𝗘𝗤𝗨𝗘𝗦𝗧𝗘𝗗 𝗙𝗨𝗡𝗗𝗦 𝗛𝗔𝗩𝗘 𝗕𝗘𝗘𝗡 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟𝗟𝗬 𝗦𝗘𝗡𝗧 𝗧𝗢 𝗬𝗢𝗨𝗥 𝗣𝗥𝗢𝗩𝗜𝗗𝗘𝗗 𝗡𝗨𝗠𝗕𝗘𝗥.\n"
+            f"━━━━━━━━━━━━━"
         )
+        bot.send_message(target_user, success_msg, reply_markup=main_menu())
+        
         try:
             bot.edit_message_caption(caption=call.message.caption + "\n\n✅ 𝗦𝗧𝗔𝗧𝗨𝗦: 𝗔𝗣𝗣𝗥𝗢𝗩𝗘𝗗 & 𝗣𝗔𝗜𝗗", chat_id=call.message.chat.id, message_id=call.message.message_id)
         except Exception:
@@ -243,12 +268,17 @@ def callback_query(call):
 
     elif data.startswith("rej_"):
         target_user = int(data.split("_")[1])
-        bot.answer_callback_query(call.id, "𝗢𝗥𝗗𝗘𝗥 𝗥𝗘𝗝𝗘𝗖𝗧 𝗞𝗢𝗥𝗔 𝗛𝗢𝗬𝗘𝗖𝗛𝗘.")
-        bot.send_message(
-            target_user, 
-            "⚠️ 𝗦𝗢𝗧𝗢𝗥𝗞𝗢𝗕𝗔𝗥𝗧𝗔! 𝗔𝗣𝗡𝗔𝗥 𝗢𝗥𝗗𝗘𝗥-𝗧𝗜 𝗥𝗘𝗝𝗘𝗖𝗧 𝗞𝗢𝗥𝗔 𝗛𝗢𝗬𝗘𝗖𝗛𝗘. 𝗦𝗢𝗧𝗛𝗜𝗞 𝗧𝗢𝗧𝗧𝗛𝗢 𝗗𝗜𝗬𝗘 𝗔𝗕𝗔𝗥 𝗖𝗛𝗘𝗦𝗧𝗔 𝗞𝗢𝗥𝗨𝗡.", 
-            reply_markup=main_menu()
+        bot.answer_callback_query(call.id, "Order rejected.")
+        
+        reject_msg = (
+            f"━━━━━━━━━━━━━\n"
+            f"❌ 𝗣𝗔𝗬𝗠𝗘𝗡𝗧 𝗥𝗘𝗝𝗘𝗖𝗧𝗘𝗗\n"
+            f"━━━━━━━━━━━━━\n"
+            f"⚠️ 𝗬𝗢𝗨𝗥 𝗢𝗥𝗗𝗘𝗥 𝗪𝗔𝗦 𝗥𝗘𝗝𝗘𝗖𝗧𝗘𝗗. 𝗣𝗟𝗘𝗔𝗦𝗘 𝗖𝗢𝗡𝗧𝗔𝗖𝗧 𝗦𝗨𝗣𝗣𝗢𝗥𝗧.\n"
+            f"━━━━━━━━━━━━━"
         )
+        bot.send_message(target_user, reject_msg, reply_markup=main_menu())
+        
         try:
             bot.edit_message_caption(caption=call.message.caption + "\n\n❌ 𝗦𝗧𝗔𝗧𝗨𝗦: 𝗥𝗘𝗝𝗘𝗖𝗧𝗘𝗗", chat_id=call.message.chat.id, message_id=call.message.message_id)
         except Exception:
@@ -260,11 +290,11 @@ def callback_query(call):
         bot.answer_callback_query(call.id, f"𝗕𝗢𝗧 𝗦𝗧𝗔𝗧𝗨𝗦: {status_text}", show_alert=True)
 
     elif data == "admin_rate":
-        bot.answer_callback_query(call.id, f"𝗕𝗢𝗥𝗧𝗢𝗠𝗔𝗡 𝗥𝗔𝗧𝗘: {DOLAR_RATE} 𝗧𝗔𝗞𝗔", show_alert=True)
+        bot.answer_callback_query(call.id, f"𝗖𝗨𝗥𝗥𝗘𝗡𝗧 𝗥𝗔𝗧𝗘: {DOLAR_RATE} 𝗕𝗗𝗧", show_alert=True)
 
     elif data == "admin_broadcast":
         user_state[ADMIN_ID] = {"step": "waiting_broadcast"}
-        bot.send_message(ADMIN_ID, "📢 𝗕𝗥𝗢𝗔𝗗𝗖𝗔𝗦𝗧 𝗠𝗘𝗦𝗦𝗔𝗚𝗘-𝗧𝗜 𝗟𝗜𝗞𝗛𝗘 𝗣𝗔𝗧𝗛𝗔𝗡:")
+        bot.send_message(ADMIN_ID, "📢 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗬𝗢𝗨𝗥 𝗕𝗥𝗢𝗔𝗗𝗖𝗔𝗦𝗧 𝗠𝗘𝗦𝗦𝗔𝗚𝗘:")
 
 if __name__ == "__main__":
     print("Bot is starting on Railway...")

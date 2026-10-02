@@ -5,8 +5,8 @@ from telebot import types
 # শুধু টেলিগ্রাম টোকেনটি রেলওয়ে ভ্যারিয়েবল থেকে নেওয়া হবে
 TOKEN = os.environ.get('BOT_TOKEN')
 
-# বাকি সব কনফিগারেশন এখানে বসানো হয়েছে
-ADMIN_ID = 6123456789          # আপনার টেলিগ্রাম অ্যাডমিন আইডি এখানে দিন
+# আপনার আসল টেলিগ্রাম আইডি এখানে দিন (যেমন: 7388500439)
+ADMIN_ID = 7388500439          
 BINANCE_ID = "123456789"       # আপনার বাইন্যান্স পে আইডি এখানে দিন
 ADMIN_USERNAME = "SAIM_X9"     # আপনার ইউজারনেম
 DOLAR_RATE = 119.0             # বর্তমান ডলার রেট
@@ -19,9 +19,9 @@ bot_status = {"is_active": True}
 # প্রধান মেনু (Reply Keyboard)
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn_sell = types.KeyboardButton("💵 ডলার সেল করুন")
-    btn_support = types.KeyboardButton("📞 হেল্প ও সাপোর্ট")
-    btn_admin = types.KeyboardButton("👑 অ্যাডমিন প্যানেল")
+    btn_sell = types.KeyboardButton("💵 𝐒𝐄𝐋𝐋 𝐃𝐎𝐋𝐋𝐄𝐑")
+    btn_support = types.KeyboardButton("📞 𝐒𝐔𝐏𝐏𝐎𝐑𝐓")
+    btn_admin = types.KeyboardButton("👑 𝐀𝐃𝐌𝐈𝐍 𝐏𝐀𝐍𝐄𝐋")
     markup.add(btn_sell, btn_support, btn_admin)
     return markup
 

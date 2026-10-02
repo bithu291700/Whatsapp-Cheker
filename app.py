@@ -99,6 +99,15 @@ def handle_messages(message):
             user_state[user_id]["total_taka"] = total_taka
             user_state[user_id]["step"] = "waiting_order_id"
 
+            # Delete the previous "Enter Amount" message
+            try:
+                prev_msg_id = user_state[user_id].get("amount_msg_id")
+                if prev_msg_id:
+                    bot.delete_message(user_id, prev_msg_id)
+            except Exception:
+                pass
+
+            # Delete user's amount text message
             try:
                 bot.delete_message(user_id, message.message_id)
             except Exception:
@@ -115,7 +124,8 @@ def handle_messages(message):
                 f"💎 𝗕𝗜𝗡𝗔𝗡𝗖𝗘 𝗣𝗔𝗬 𝗜𝗗:\n`{BINANCE_ID}`\n\n"
                 f"📥 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗬𝗢𝗨𝗥 𝗢𝗥𝗗𝗘𝗥 𝗜𝗗 (𝗧𝗫𝗜𝗗):"
             )
-            bot.send_message(user_id, binance_msg, parse_mode="Markdown", reply_markup=main_menu())
+            sent_msg = bot.send_message(user_id, binance_msg, parse_mode="Markdown", reply_markup=main_menu())
+            user_state[user_id]["binance_msg_id"] = sent_msg.message_id
         except ValueError:
             bot.send_message(user_id, "⚠️ 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗔 𝗩𝗔𝗟𝗜𝗗 𝗡𝗨𝗠𝗕𝗘𝗥!", reply_markup=main_menu())
 
@@ -123,6 +133,15 @@ def handle_messages(message):
         user_state[user_id]["order_id"] = text
         user_state[user_id]["step"] = "waiting_screenshot"
         
+        # Delete the Binance payment instruction message
+        try:
+            prev_msg_id = user_state[user_id].get("binance_msg_id")
+            if prev_msg_id:
+                bot.delete_message(user_id, prev_msg_id)
+        except Exception:
+            pass
+
+        # Delete user's order ID text message
         try:
             bot.delete_message(user_id, message.message_id)
         except Exception:
@@ -135,7 +154,7 @@ def handle_messages(message):
         )
         markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_main"))
 
-        bot.send_message(
+        sent_msg = bot.send_message(
             user_id, 
             "━━━━━━━━━━━━━\n"
             "✅ 𝗧𝗥𝗔𝗡𝗦𝗔𝗖𝗧𝗜𝗢𝗡 𝗜𝗗 𝗥𝗘𝗖𝗘𝗜𝗩𝗘𝗗!\n"
@@ -143,11 +162,18 @@ def handle_messages(message):
             "📸 𝗡𝗢𝗪 𝗣𝗟𝗘𝗔𝗦𝗘 𝗨𝗣𝗟𝗢𝗔𝗗 𝗧𝗛𝗘 𝗣𝗔𝗬𝗠𝗘𝗡𝗧 𝗦𝗖𝗥𝗘𝗘𝗡𝗦𝗛𝗢𝗧 👇", 
             reply_markup=markup
         )
+        user_state[user_id]["tx_received_msg_id"] = sent_msg.message_id
 
     elif user_state.get(user_id, {}).get("step") == "waiting_bkash":
         user_state[user_id]["bkash_number"] = text
         data = user_state[user_id]
         user_state[user_id]["step"] = "completed"
+
+        # Delete user's bkash number text message
+        try:
+            bot.delete_message(user_id, message.message_id)
+        except Exception:
+            pass
 
         summary_msg = (
             f"━━━━━━━━━━━━━\n"
@@ -189,6 +215,15 @@ def handle_photos(message):
         user_state[user_id]["photo_file_id"] = message.photo[-1].file_id
         user_state[user_id]["step"] = "waiting_bkash"
         
+        # Delete the previous "Transaction ID Received" message with buttons
+        try:
+            prev_msg_id = user_state[user_id].get("tx_received_msg_id")
+            if prev_msg_id:
+                bot.delete_message(user_id, prev_msg_id)
+        except Exception:
+            pass
+
+        # Delete user's photo message
         try:
             bot.delete_message(user_id, message.message_id)
         except Exception:
@@ -198,14 +233,17 @@ def handle_photos(message):
         markup.add(types.InlineKeyboardButton("💳 𝗔𝗧𝗠 𝗕𝗞𝗔𝗦𝗛", callback_data="atm_bkash"))
         markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_main"))
 
-        bot.send_message(
+        sent_msg = bot.send_message(
             user_id, 
+            "━━━━━━━━━━━━━\n"
+            "✅ 𝗦𝗖𝗥𝗘𝗘𝗡𝗦𝗛𝗢𝗧 𝗥𝗘𝗖𝗘𝗜𝗩𝗘𝗗!\n"
             "━━━━━━━━━━━━━\n"
             "🏦 𝗥𝗘𝗖𝗘𝗜𝗩𝗘 𝗠𝗢𝗡𝗘𝗬 𝗩𝗜𝗔\n"
             "━━━━━━━━━━━━━\n"
             "👇 𝗦𝗘𝗟𝗘𝗖𝗧 𝗪𝗛𝗘𝗥𝗘 𝗬𝗢𝗨 𝗪𝗔𝗡𝗧 𝗧𝗢 𝗥𝗘𝗖𝗘𝗜𝗩𝗘 𝗬𝗢𝗨𝗥 𝗙𝗨𝗡𝗗𝗦:",
             reply_markup=markup
         )
+        user_state[user_id]["bkash_prompt_msg_id"] = sent_msg.message_id
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
@@ -228,13 +266,16 @@ def callback_query(call):
             f"💹 𝗖𝗨𝗥𝗥𝗘𝗡𝗧 𝗥𝗔𝗧𝗘: 1 𝗨𝗦𝗗 = {DOLAR_RATE} 𝗕𝗗𝗧\n\n"
             f"👇 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗧𝗛𝗘 𝗧𝗢𝗧𝗔𝗟 𝗗𝗢𝗟𝗟𝗔𝗥𝗦 𝗬𝗢𝗨 𝗪𝗜𝗦𝗛 𝗧𝗢 𝗦𝗘𝗟𝗟:"
         )
-        bot.send_message(user_id, amount_msg)
+        sent_msg = bot.send_message(user_id, amount_msg)
+        user_state[user_id]["amount_msg_id"] = sent_msg.message_id
         return
 
     if data == "atm_bkash":
         bot.answer_callback_query(call.id)
         try:
-            bot.delete_message(call.message.chat.id, call.message.message_id)
+            prev_msg_id = user_state.get(user_id, {}).get("bkash_prompt_msg_id")
+            if prev_msg_id:
+                bot.delete_message(call.message.chat.id, prev_msg_id)
         except Exception:
             pass
         bot.send_message(user_id, "📱 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗬𝗢𝗨𝗥 𝗕𝗞𝗔𝗦𝗛 𝗡𝗨𝗠𝗕𝗘𝗥:")

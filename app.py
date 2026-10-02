@@ -2,22 +2,6 @@ import os
 import telebot
 from telebot import types
 
-# Shudhu telegram token railway variable theke neoa hobe
-TOKEN = os.environ.get('BOT_TOKEN')
-
-# Apnar asol telegram id ekhane din
-ADMIN_ID = 7388500439          
-BINANCE_ID = "123456789"       # Apnar binance pay id ekhane din
-ADMIN_USERNAME = "SAIM_X9"     # Apnar username
-DOLAR_RATE = 119.0             # Bortoman dolar rate
-import os
-import telebot
-from telebot import types
-
-import os
-import telebot
-from telebot import types
-
 TOKEN = os.environ.get('BOT_TOKEN')
 
 ADMIN_ID = 7388500439          
@@ -48,9 +32,9 @@ def send_welcome(message):
     welcome_text = (
         f"🌙 𝐀𝐒𝐒𝐀𝐋𝐀𝐌𝐔 𝐀𝐋𝐀𝐈𝐊𝐔𝐌\n"
         f"👤 𝐈'𝐌 𝐒𝐀𝐈𝐌\n"
-        f"👑 𝐀𝐃𝐌𝐈𝐍 𝐎𝐅 𝐔𝐍𝐈𝐕𝐄𝐑𝐒𝐄 𝐄𝐗𝐂𝐇𝐀𝐍𝐆𝐄𝐑 ⚡\n\n"
+        f"👑 𝐀𝐃𝐌𝐈𝐍 𝐎𝐅 𝐑𝐄𝐗 𝐏𝐑𝐈𝐕𝐀𝐓𝐄 𝐁𝐎𝐓 ⚡\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🌟 Welcome to Universe Exchanger Zone!\n"
+        f"🌟 Welcome to Rex Private Bot Zone!\n"
         f"💱 Rate: 1 USD = {DOLAR_RATE} Taka\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"👇 Apnar proyojonio option-ti niche select korun:"
@@ -73,7 +57,7 @@ def handle_messages(message):
         msg = (
             f"🌙 𝐀𝐒𝐒𝐀𝐋𝐀𝐌𝐔 𝐀𝐋𝐀𝐈𝐊𝐔𝐌\n"
             f"👤 𝐈'𝐌 𝐒𝐀𝐈𝐌\n"
-            f"👑 𝐀𝐃𝐌𝐈𝐍 𝐎𝐅 𝐔𝐍𝐈𝐕𝐄𝐑𝐒𝐄 𝐄𝐗𝐂𝐇𝐀𝐍𝐆𝐄𝐑 ⚡\n\n"
+            f"👑 𝐀𝐃𝐌𝐈𝐍 𝐎𝐅 𝐑𝐄𝐗 𝐏𝐑𝐈𝐕𝐀𝐓𝐄 𝐁𝐎𝐓 ⚡\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
             f"📈 Rate: {DOLAR_RATE} Taka / USD\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -124,7 +108,7 @@ def handle_messages(message):
             binance_msg = (
                 f"🌙 𝐀𝐒𝐒𝐀𝐋𝐀𝐌𝐔 𝐀𝐋𝐀𝐈𝐊𝐔𝐌\n"
                 f"👤 𝐈'𝐌 𝐒𝐀𝐈𝐌\n"
-                f"👑 𝐀𝐃𝐌𝐈𝐍 𝐎𝐅 𝐔𝐍𝐈𝐕𝐄𝐑𝐒𝐄 𝐄𝐗𝐂𝐇𝐀𝐍𝐆𝐄𝐑 ⚡\n\n"
+                f"👑 𝐀𝐃𝐌𝐈𝐍 𝐎𝐅 𝐑𝐄𝐗 𝐏𝐑𝐈𝐕𝐀𝐓𝐄 𝐁𝐎𝐓 ⚡\n\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"✅ Sell Korchen: {amount} USD\n"
                 f"💰 Apni Paben: {total_taka} Taka\n"
@@ -162,7 +146,7 @@ def handle_messages(message):
         summary_msg = (
             f"🌙 𝐀𝐒𝐒𝐀𝐋𝐀𝐌𝐔 𝐀𝐋𝐀𝐈𝐊𝐔𝐌\n"
             f"👤 𝐈'𝐌 𝐒𝐀𝐈𝐌\n"
-            f"👑 𝐀𝐃𝐌𝐈𝐍 𝐎𝐅 𝐔𝐍𝐈𝐕𝐄𝐑𝐒𝐄 𝐄𝐗𝐂𝐇𝐀𝐍𝐆𝐄𝐑 ⚡\n\n"
+            f"👑 𝐀𝐃𝐌𝐈𝐍 𝐎𝐅 𝐑𝐄𝐗 𝐏𝐑𝐈𝐕𝐀𝐓𝐄 𝐁𝐎𝐓 ⚡\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
             f"🎉 𝐀𝐏𝐍𝐀𝐑 𝐎𝐑𝐃𝐄𝐑 𝐒𝐔𝐁𝐌𝐈𝐓 𝐇𝐎𝐘𝐄𝐂𝐇𝐄!\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -247,7 +231,7 @@ def callback_query(call):
             target_user, 
             "🎉 𝐀𝐒𝐒𝐀𝐋𝐀𝐌𝐔 𝐀𝐋𝐀𝐈𝐊𝐔𝐌\n"
             "👤 𝐈'𝐌 𝐒𝐀𝐈𝐌\n"
-            "👑 𝐀𝐃𝐌𝐈𝐍 𝐎𝐅 𝐔𝐍𝐈𝐕𝐄𝐑𝐒𝐄 𝐄𝐗𝐂𝐇𝐀𝐍𝐆𝐄𝐑 ⚡\n\n"
+            "👑 𝐀𝐃𝐌𝐈𝐍 𝐎𝐅 𝐑𝐄𝐗 𝐏𝐑𝐈𝐕𝐀𝐓𝐄 𝐁𝐎𝐓 ⚡\n\n"
             "✅ 𝐏𝐀𝐘𝐌𝐄𝐍𝐓 𝐒𝐔𝐂𝐂𝐄𝐒𝐒𝐅𝐔𝐋\n"
             "Requested funds have been successfully sent to your provided number.", 
             reply_markup=main_menu()

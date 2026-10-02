@@ -52,15 +52,17 @@ def handle_messages(message):
         return
 
     if text == "💵 𝐒𝐄𝐋𝐋 𝐃𝐎𝐋𝐋𝐄𝐑":
-        user_state[user_id] = {"step": "waiting_amount"}
+        # শুধু Binance অপশন সহ ইনলাইন কিবোর্ড তৈরি করা হলো
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("Binance", callback_data="binance_sell_option"))
+        
         msg = (
             f"🎉 𝐎𝐯𝐡𝐢𝐧𝐨𝐧𝐝𝐨𝐧! 𝐀𝐩𝐧𝐢 𝐚𝐦𝐚𝐝𝐞𝐫 𝐬𝐚𝐭𝐡𝐞 𝐬𝐡𝐨𝐟𝐨𝐥𝐯𝐚𝐛𝐞 𝐝𝐨𝐥𝐥𝐚𝐫 𝐬𝐞𝐥𝐥 𝐤𝐨𝐫𝐚 𝐬𝐡𝐮𝐫𝐮 𝐤𝐨𝐫𝐞𝐜𝐡𝐞𝐧.\n\n"
             f"📈 𝐁𝐨𝐫𝐭𝐨𝐦𝐚𝐧 𝐞𝐱𝐜𝐡𝐚𝐧𝐠𝐞 𝐫𝐚𝐭𝐞: {DOLAR_RATE} 𝐓𝐚𝐤𝐚 / 𝐔𝐒𝐃\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"✏️ 𝐀𝐩𝐧𝐢 𝐤𝐨𝐭𝐨 𝐝𝐨𝐥𝐥𝐚𝐫 (𝐔𝐒𝐃) 𝐬𝐞𝐥𝐥 𝐤𝐨𝐫𝐭𝐞 𝐜𝐡𝐚𝐧?\n"
-            f"𝐃𝐨𝐲𝐚 𝐤𝐨𝐫𝐞 𝐬𝐡𝐮𝐝𝐡𝐮 𝐬𝐡𝐨𝐧𝐠𝐤𝐡𝐚-𝐭𝐢 (𝐣𝐞𝐦𝐨𝐧: 𝟏𝟎 𝐛𝐚 𝟓𝟎) 𝐧𝐢𝐜𝐡𝐞 𝐥𝐢𝐤𝐡𝐞 𝐩𝐚𝐭𝐡𝐚𝐧:"
+            f"👇 𝐃𝐨𝐲𝐚 𝐤𝐨𝐫𝐞 𝐧𝐢𝐜𝐡𝐞𝐫 𝐛𝐮𝐭𝐭𝐨𝐧-𝐞 𝐜𝐥𝐢𝐤 𝐤𝐨𝐫𝐮𝐧:"
         )
-        bot.send_message(user_id, msg, reply_markup=main_menu())
+        bot.send_message(user_id, msg, reply_markup=markup)
 
     elif text == "📞 𝐒𝐔𝐏𝐏𝐎𝐑𝐓":
         user_state.pop(user_id, None)
@@ -96,6 +98,12 @@ def handle_messages(message):
             user_state[user_id]["amount"] = amount
             user_state[user_id]["total_taka"] = total_taka
             user_state[user_id]["step"] = "waiting_order_id"
+
+            # ইউজারের পাঠানো সংখ্যা লেখার মেসেজটি ভ্যানিশ করার চেষ্টা
+            try:
+                bot.delete_message(user_id, message.message_id)
+            except Exception:
+                pass
 
             binance_msg = (
                 f"✅ 𝐀𝐩𝐧𝐢 𝐬𝐞𝐥𝐥 𝐤𝐨𝐫𝐭𝐞 𝐜𝐡𝐚𝐜𝐜𝐡𝐞𝐧: {amount} 𝐔𝐒𝐃\n"
@@ -169,6 +177,26 @@ def callback_query(call):
     global DOLAR_RATE
     user_id = call.from_user.id
     data = call.data
+
+    # Binance অপশন বাটনে ক্লিক করার হ্যান্ডলার
+    if data == "binance_sell_option":
+        bot.answer_callback_query(call.id)
+        
+        # আগের মেনু মেসেজটি ভ্যানিশ বা ডিলিট করে দেওয়া
+        try:
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+        except Exception as e:
+            print(e)
+            
+        # ইউজারের স্টেট সেট করা যাতে পরবর্তী লেখাটি অ্যামাউন্ট হিসেবে ধরে
+        user_state[user_id] = {"step": "waiting_amount"}
+        
+        bot.send_message(
+            user_id, 
+            "✏️ 𝐀𝐩𝐧𝐢 𝐤𝐨𝐭𝐨 𝐝𝐨𝐥𝐥𝐚𝐫 (𝐔𝐒𝐃) 𝐬𝐞𝐥𝐥 𝐤𝐨𝐫𝐭𝐞 𝐜𝐡𝐚𝐧?\n"
+            "𝐃𝐨𝐲𝐚 𝐤𝐨𝐫𝐞 𝐬𝐡𝐮𝐝𝐡𝐮 𝐬𝐡𝐨𝐧𝐠𝐤𝐡𝐚-𝐭𝐢 (𝐣𝐞𝐦𝐨𝐧: 𝟏𝟎 𝐛𝐚 𝟓𝟎) 𝐧𝐢𝐜𝐡𝐞 𝐥𝐢𝐤𝐡𝐞 𝐩𝐚𝐭𝐡𝐚𝐧:"
+        )
+        return
 
     if user_id != ADMIN_ID:
         bot.answer_callback_query(call.id, "❌ 𝐄𝐢 𝐤𝐚𝐣 𝐤𝐨𝐫𝐚𝐫 𝐩𝐞𝐫𝐦𝐢𝐬𝐬𝐢𝐨𝐧 𝐚𝐩𝐧𝐚𝐫 𝐧𝐞𝐢!", show_alert=True)

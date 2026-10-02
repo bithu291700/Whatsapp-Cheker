@@ -65,6 +65,7 @@ def handle_messages(message):
             f"👇 𝗖𝗟𝗜𝗖𝗞 𝗧𝗛𝗘 𝗕𝗨𝗧𝗧𝗢𝗡 𝗕𝗘𝗟𝗢𝗪:"
         )
         remove_markup = types.ReplyKeyboardRemove()
+        bot.send_message(user_id, "Menu hidden", reply_markup=remove_markup)
         bot.send_message(user_id, msg, reply_markup=markup)
 
     elif text == "📞 𝗦𝗨𝗣𝗣𝗢𝗥𝗧":
@@ -276,7 +277,7 @@ def callback_query(call):
         user_state[user_id] = {"step": "waiting_amount"}
         
         markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("⬅️️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
+        markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
 
         amount_msg = (
             f"💵 𝗘𝗡𝗧𝗘𝗥 𝗔𝗠𝗢𝗨𝗡𝗧 (𝗨𝗦𝗗)\n\n"

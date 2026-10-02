@@ -56,11 +56,15 @@ def handle_messages(message):
         markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
         
         msg = (
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🤲 𝗔𝗦𝗦𝗔𝗟𝗔𝗠𝗨 𝗔𝗟𝗔𝗜𝗞𝗨𝗠\n"
+            f"👤 𝗜'𝗠 𝗦𝗔𝗜𝗠\n"
+            f"👑 𝗔𝗗𝗠𝗜𝗡 𝗢𝗙 𝗥𝗘𝗫 𝗣𝗥𝗜𝗩𝗔𝗧𝗘 𝗕𝗢𝗧\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
             f"📈 𝗖𝗨𝗥𝗥𝗘𝗡𝗧 𝗥𝗔𝗧𝗘: {DOLAR_RATE} 𝗕𝗗𝗧 / 𝗨𝗦𝗗\n\n"
             f"👇 𝗖𝗟𝗜𝗖𝗞 𝗧𝗛𝗘 𝗕𝗨𝗧𝗧𝗢𝗡 𝗕𝗘𝗟𝗢𝗪:"
         )
         remove_markup = types.ReplyKeyboardRemove()
-        bot.send_message(user_id, "⬇️", reply_markup=remove_markup)
         bot.send_message(user_id, msg, reply_markup=markup)
 
     elif text == "📞 𝗦𝗨𝗣𝗣𝗢𝗥𝗧":
@@ -220,7 +224,7 @@ def handle_photos(message):
         
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("💳 𝗔𝗧𝗠 𝗕𝗞𝗔𝗦𝗛", callback_data="atm_bkash"))
-        markup.add(types.InlineKeyboardButton("⬅️️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
+        markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
 
         sent_msg = bot.send_message(
             user_id, 
@@ -272,7 +276,7 @@ def callback_query(call):
         user_state[user_id] = {"step": "waiting_amount"}
         
         markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
+        markup.add(types.InlineKeyboardButton("⬅️️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
 
         amount_msg = (
             f"💵 𝗘𝗡𝗧𝗘𝗥 𝗔𝗠𝗢𝗨𝗡𝗧 (𝗨𝗦𝗗)\n\n"

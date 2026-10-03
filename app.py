@@ -14,7 +14,7 @@ bot = telebot.TeleBot(TOKEN)
 user_state = {}
 bot_status = {"is_active": True}
 
-# **Premium Custom Emoji IDs (আপনার দেওয়া আইডিগুলো দিয়ে সেট করা)**
+# Premium Custom Emoji IDs (মেসেজের জন্য)
 E_HAND = '<a href="tg://emoji?id=5269657987219232606">🤲</a>'
 E_CHECK = '<a href="tg://emoji?id=5206607081334906820">✅</a>'
 E_STAR = '<a href="tg://emoji?id=5269215244810491516">🌟</a>'
@@ -37,10 +37,10 @@ E_POINT = '<a href="tg://emoji?id=5449683594425410231">👇</a>'
 
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    # টেলিগ্রামের নিয়ম অনুযায়ী ReplyKeyboardMarkup-এর বোতামে শুধু টেক্সট বা সাধারণ ইমোজি কাজ করে, তাই এখানে পরিষ্কার স্ট্যান্ডার্ড ইমোজি রাখা হয়েছে যাতে ক্র্যাশ না করে
-    btn_sell = types.KeyboardButton(f"💵 𝗦𝗘𝗟𝗟 𝗗𝗢𝗟𝗟𝗘𝗥")
-    btn_support = types.KeyboardButton(f"🛠 𝗦𝗨𝗣𝗣𝗢𝗥𝗧")
-    btn_admin = types.KeyboardButton(f"👑 𝗔𝗗𝗠𝗜𝗡 𝗣𝗔𝗡𝗘𝗟")
+    # এখানে বাটন টেক্সট থেকে এইচটিএমএল ট্যাগ রিমুভ করে শুধু সাধারণ ইমোজি ও টেক্সট রাখা হয়েছে যাতে বাটনে ক্লিক কাজ করে
+    btn_sell = types.KeyboardButton("💵 𝗦𝗘𝗟𝗟 𝗗𝗢𝗟𝗟𝗘𝗥")
+    btn_support = types.KeyboardButton("🛠 𝗦𝗨𝗣𝗣𝗢𝗥𝗧")
+    btn_admin = types.KeyboardButton("👑 𝗔𝗗𝗠𝗜𝗡 𝗣𝗔𝗡𝗘𝗟")
     markup.add(btn_sell, btn_support, btn_admin)
     return markup
 
@@ -131,7 +131,7 @@ def handle_messages(message):
                 pass
 
             markup = types.InlineKeyboardMarkup()
-            markup.add(types.InlineKeyboardButton("⬅️️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
+            markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
 
             binance_msg = (
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -320,7 +320,7 @@ def callback_query(call):
             pass
             
         markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("⬅ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
+        markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
         bot.send_message(user_id, f"{E_PHONE} 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗬𝗢𝗨𝗥 𝗕𝗞𝗔𝗦𝗛 𝗡𝗨𝗠𝗕𝗘𝗥:", parse_mode="HTML", reply_markup=markup)
         return
 

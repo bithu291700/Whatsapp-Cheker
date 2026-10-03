@@ -14,15 +14,15 @@ bot = telebot.TeleBot(TOKEN)
 user_state = {}
 bot_status = {"is_active": True}
 
-# **Sothik Emoji IDs (Screenshot theke neya holo)**
-E_HAND = '<a href="tg://emoji?id=5269657987219232606">🤲</a>'     # 1
-E_CHECK = '<a href="tg://emoji?id=5206607081334906820">✅</a>'    # 2
-E_STAR = '<a href="tg://emoji?id=5269215244810491516">🌟</a>'     # 3
-E_CHART = '<a href="tg://emoji?id=5231159755803761138">📈</a>'   # 4
-E_MONEY = '<a href="tg://emoji?id=5411225014148014586">💵</a>'   # 7
-E_CROSS = '<a href="tg://emoji?id=5210952531676504517">❌</a>'    # 8
-E_DIAMOND = '<a href="tg://emoji?id=5240241223632954241">💎</a>' # 9
-E_TOOL = '<a href="tg://emoji?id=5341715473882955310">🛠</a>'     # (Extra standard)
+# **Premium Custom Emoji IDs (আপনার দেওয়া আইডিগুলো দিয়ে সেট করা)**
+E_HAND = '<a href="tg://emoji?id=5269657987219232606">🤲</a>'
+E_CHECK = '<a href="tg://emoji?id=5206607081334906820">✅</a>'
+E_STAR = '<a href="tg://emoji?id=5269215244810491516">🌟</a>'
+E_CHART = '<a href="tg://emoji?id=5231159755803761138">📈</a>'
+E_MONEY = '<a href="tg://emoji?id=5411225014148014586">💵</a>'
+E_CROSS = '<a href="tg://emoji?id=5210952531676504517">❌</a>'
+E_DIAMOND = '<a href="tg://emoji?id=5240241223632954241">💎</a>'
+E_TOOL = '<a href="tg://emoji?id=5341715473882955310">🛠</a>'
 E_WARNING = '<a href="tg://emoji?id=5447644880824161073">⚠</a>'
 E_INBOX = '<a href="tg://emoji?id=5323442290709895472">📥</a>'
 E_CAMERA = '<a href="tg://emoji?id=584602487033353251">📸</a>'
@@ -37,6 +37,7 @@ E_POINT = '<a href="tg://emoji?id=5449683594425410231">👇</a>'
 
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+    # টেলিগ্রামের নিয়ম অনুযায়ী ReplyKeyboardMarkup-এর বোতামে শুধু টেক্সট বা সাধারণ ইমোজি কাজ করে, তাই এখানে পরিষ্কার স্ট্যান্ডার্ড ইমোজি রাখা হয়েছে যাতে ক্র্যাশ না করে
     btn_sell = types.KeyboardButton(f"💵 𝗦𝗘𝗟𝗟 𝗗𝗢𝗟𝗟𝗘𝗥")
     btn_support = types.KeyboardButton(f"🛠 𝗦𝗨𝗣𝗣𝗢𝗥𝗧")
     btn_admin = types.KeyboardButton(f"👑 𝗔𝗗𝗠𝗜𝗡 𝗣𝗔𝗡𝗘𝗟")
@@ -103,7 +104,6 @@ def handle_messages(message):
             return
         
         admin_markup = types.InlineKeyboardMarkup(row_width=2)
-        # Rate change button bad dewa holo
         admin_markup.add(
             types.InlineKeyboardButton("📢 𝗕𝗥𝗢𝗔𝗗𝗖𝗔𝗦𝗧", callback_data="admin_broadcast"),
             types.InlineKeyboardButton("🔄 𝗕𝗢𝗧 𝗢𝗡/𝗢𝗙𝗙", callback_data="admin_toggle")
@@ -131,7 +131,7 @@ def handle_messages(message):
                 pass
 
             markup = types.InlineKeyboardMarkup()
-            markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
+            markup.add(types.InlineKeyboardButton("⬅️️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
 
             binance_msg = (
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -227,7 +227,6 @@ def handle_messages(message):
             bot.send_message(ADMIN_ID, admin_notification, parse_mode="HTML", reply_markup=admin_markup)
 
     elif user_state.get(user_id, {}).get("step") == "waiting_broadcast" and user_id == ADMIN_ID:
-        broadcast_text = text
         user_state.pop(ADMIN_ID, None)
         bot.send_message(ADMIN_ID, f"{E_CHECK} 𝗕𝗥𝗢𝗔𝗗𝗖𝗔𝗦𝗧 𝗦𝗘𝗡𝗧 (Simulation)", parse_mode="HTML", reply_markup=main_menu())
 

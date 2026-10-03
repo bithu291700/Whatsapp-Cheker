@@ -38,7 +38,7 @@ E20 = "5449683594425410231"  # 20
 E21 = "5451882707875276247"  # 21
 E22 = "5436113877181941026"  # 22
 E23 = "5447644880824181073"  # 23
-E24 = "5391032818111363540"  # 24
+E24 = "5409048419211682843"  # 24
 E25 = "5406745015365943482"  # 25
 E26 = "5416041192905265756"  # 26
 E27 = "5422439311196834318"  # 27
@@ -165,10 +165,10 @@ def handle_messages(message):
                 f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
                 f"SELLING: {amount} USD <tg-emoji emoji-id='{E11}'>💵</tg-emoji>\n"
                 f"YOU WILL GET: {total_taka} BDT <tg-emoji emoji-id='{E12}'>💰</tg-emoji>\n\n"
-                f"BINANCE PAY ID: <tg-emoji emoji-id='{E13}'>💎</tg-emoji>\n`{BINANCE_ID}`\n\n"
+                f"BINANCE PAY ID: <tg-emoji emoji-id='{E13}'>💎</tg-emoji>\n<code>{BINANCE_ID}</code>\n\n"
                 f"PLEASE ENTER YOUR ORDER ID (TXID): <tg-emoji emoji-id='{E7}'>📥</tg-emoji>"
             )
-            sent_msg = bot.send_message(user_id, binance_msg, parse_mode="Markdown", reply_markup=markup)
+            sent_msg = bot.send_message(user_id, binance_msg, parse_mode="HTML", reply_markup=markup)
             user_state[user_id]["binance_msg_id"] = sent_msg.message_id
         except ValueError:
             bot.send_message(user_id, f"PLEASE ENTER A VALID NUMBER! <tg-emoji emoji-id='{E35}'>⚠️</tg-emoji>", parse_mode="HTML")

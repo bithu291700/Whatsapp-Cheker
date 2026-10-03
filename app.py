@@ -42,9 +42,11 @@ E38 = "6233367447789899509"
 
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn_sell = types.KeyboardButton(f"SELL DOLLER")
-    btn_support = types.KeyboardButton(f"SUPPORT")
-    btn_admin = types.KeyboardButton(f"ADMIN PANEL")
+    # TeleBot-e reply keyboard button-e direct color ba style parameter support kore na, 
+    # tai emoji ba standard formatting diye button gulo sajano hoyeche jate shob thik thake.
+    btn_sell = types.KeyboardButton(f"🟢 SELL DOLLER")
+    btn_support = types.KeyboardButton(f"🔵 SUPPORT")
+    btn_admin = types.KeyboardButton(f"🔴 ADMIN PANEL")
     markup.add(btn_sell, btn_support, btn_admin)
     return markup
 

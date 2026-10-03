@@ -14,45 +14,31 @@ bot = telebot.TeleBot(TOKEN)
 user_state = {}
 bot_status = {"is_active": True}
 
-# Custom Emoji IDs (38 Premium Emojis)
-E1 = "5397916757333654639"   # 1
-E2 = "5253742260054409879"   # 2
-E3 = "5217822164362739968"   # 3
-E4 = "5424972470023104089"   # 4
-E5 = "5460755126761312667"   # 5
-E6 = "5395695537687123235"   # 6
-E7 = "5267500801240092311"   # 7
-E8 = "5334759662677957452"   # 8
-E9 = "5332600543963522398"   # 9
-E10 = "5334863012475986105"  # 10
-E11 = "5028746137645876535"  # 11
-E12 = "5323628709469495421"  # 12
-E13 = "5780463361175066565"  # 13
-E14 = "5447410659077661506"  # 14
-E15 = "5274099962655816924"  # 15
-E16 = "5440660757194744323"  # 16
-E17 = "5240241223632954241"  # 17
-E18 = "5260293700088511294"  # 18
-E19 = "5229064374403998351"  # 19
-E20 = "5449683594425410231"  # 20
-E21 = "5451882707875276247"  # 21
-E22 = "5436113877181941026"  # 22
-E23 = "5447644880824181073"  # 23
-E24 = "5409048419211682843"  # 24
-E25 = "5406745015365943482"  # 25
-E26 = "5416041192905265756"  # 26
-E27 = "5422439311196834318"  # 27
-E28 = "5395695537687123235"  # 28
-E29 = "5206607081334906820"  # 29
-E30 = "5456140674028019486"  # 30
-E31 = "5240241223632954241"  # 31
-E32 = "5416081784641168838"  # 32
-E33 = "5409048419211682843"  # 33
-E34 = "5397916757333654639"  # 34
-E35 = "5427168083074628963"  # 35
-E36 = "5386367538735104399"  # 36
-E37 = "5244837092042750681"  # 37
-E38 = "5337010556253543833"  # 38
+# Custom Emoji IDs (Updated as requested)
+E1 = "5397916757333654639"   
+E2 = "5253742260054409879"   
+E4 = "5424972470023104089"   
+E5 = "5460755126761312667"   
+E7 = "5267500801240092311"   
+E9 = "5334759662677957452"   
+E10 = "5334863012475986105"  
+E11 = "5028746137645876535"  
+E12 = "5323628709469495421"  
+E13 = "5348212415077064131"  
+E14 = "5979054952360711289"  
+E18 = "5447410659077661506"  
+E19 = "5274099962655816924"  
+E20 = "5440660757194744323"  
+E21 = "5348469219761626211"  
+E24 = "5409048419211682843"  
+E25 = "5979054952360711289"  
+E26 = "5449683594425410231"  
+E27 = "5210952531676504517"  
+E33 = "5395695537687123235"  
+E34 = "5206607081334906820"  
+E35 = "5456140674028019486"  
+E36 = "5386367538735104399"  
+E38 = "6233367447789899509"  
 
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -76,7 +62,7 @@ def send_welcome(message):
         f"ADMIN OF REX PRIVATE BOT <tg-emoji emoji-id='{E4}'>👑</tg-emoji>\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"WELCOME TO REX PRIVATE BOT ZONE! <tg-emoji emoji-id='{E5}'>🌟</tg-emoji>\n"
-        f"RATE: 1 USD = {DOLAR_RATE} BDT <tg-emoji emoji-id='{E6}'>💱</tg-emoji>\n\n"
+        f"CURRENT RATE: 1 USD = {DOLAR_RATE} BDT <tg-emoji emoji-id='{E38}'>💱</tg-emoji>\n\n"
         f"PLEASE SELECT AN OPTION: <tg-emoji emoji-id='{E7}'>👇</tg-emoji>"
     )
     bot.send_message(message.chat.id, welcome_text, parse_mode="HTML", reply_markup=main_menu())
@@ -101,7 +87,7 @@ def handle_messages(message):
             f"I'M SAIM <tg-emoji emoji-id='{E2}'>👤</tg-emoji>\n"
             f"ADMIN OF REX PRIVATE BOT <tg-emoji emoji-id='{E4}'>👑</tg-emoji>\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"CURRENT RATE: {DOLAR_RATE} BDT / USD <tg-emoji emoji-id='{E8}'>📈</tg-emoji>\n\n"
+            f"CURRENT RATE: {DOLAR_RATE} BDT / USD <tg-emoji emoji-id='{E24}'>📈</tg-emoji>\n\n"
             f"CLICK THE BUTTON BELOW: <tg-emoji emoji-id='{E7}'>👇</tg-emoji>"
         )
         remove_markup = types.ReplyKeyboardRemove()
@@ -132,7 +118,7 @@ def handle_messages(message):
     elif user_state.get(user_id, {}).get("step") == "waiting_broadcast":
         if user_id == ADMIN_ID:
             user_state.pop(user_id, None)
-            bot.send_message(user_id, f"BROADCAST SENT! <tg-emoji emoji-id='{E1}'>✅</tg-emoji>\n\n{text}", parse_mode="HTML", reply_markup=main_menu())
+            bot.send_message(user_id, f"BROADCAST SENT! <tg-emoji emoji-id='{E14}'>✅</tg-emoji>\n\n{text}", parse_mode="HTML", reply_markup=main_menu())
 
     elif user_state.get(user_id, {}).get("step") == "waiting_amount":
         try:
@@ -201,7 +187,7 @@ def handle_messages(message):
             f"━━━━━━━━━━━━━\n"
             f"TRANSACTION ID RECEIVED! <tg-emoji emoji-id='{E14}'>✅</tg-emoji>\n"
             f"━━━━━━━━━━━━━\n\n"
-            f"NOW PLEASE UPLOAD THE PAYMENT SCREENSHOT <tg-emoji emoji-id='{E15}'>📸</tg-emoji> 👇", 
+            f"NOW PLEASE UPLOAD THE PAYMENT SCREENSHOT <tg-emoji emoji-id='{E7}'>📸</tg-emoji> 👇", 
             parse_mode="HTML",
             reply_markup=markup
         )
@@ -219,9 +205,9 @@ def handle_messages(message):
 
         summary_msg = (
             f"━━━━━━━━━━━━━\n"
-            f"REQUEST SUBMITTED <tg-emoji emoji-id='{E16}'>⏳</tg-emoji>\n"
+            f"REQUEST SUBMITTED <tg-emoji emoji-id='{E14}'>⏳</tg-emoji>\n"
             f"━━━━━━━━━━━━━\n"
-            f"PLEASE STAY ONLINE. YOUR PAYMENT WILL BE SENT TO YOUR ACCOUNT SHORTLY WITHIN A FEW MINUTES. <tg-emoji emoji-id='{E17}'>✅</tg-emoji>\n"
+            f"PLEASE STAY ONLINE. YOUR PAYMENT WILL BE SENT TO YOUR ACCOUNT SHORTLY WITHIN A FEW MINUTES. <tg-emoji emoji-id='{E36}'>✅</tg-emoji>\n"
             f"━━━━━━━━━━━━━\n\n"
             f"┏━━━━━━━ MOON ━━━━━━━┓\n"
             f"ASSALAMU ALAIKUM <tg-emoji emoji-id='{E1}'>✅</tg-emoji>\n"
@@ -271,9 +257,9 @@ def handle_photos(message):
         sent_msg = bot.send_message(
             user_id, 
             f"━━━━━━━━━━━━━\n"
-            f"SCREENSHOT RECEIVED! <tg-emoji emoji-id='{E22}'>✅</tg-emoji>\n"
+            f"SCREENSHOT RECEIVED! <tg-emoji emoji-id='{E14}'>✅</tg-emoji>\n"
             f"━━━━━━━━━━━━━\n"
-            f"RECEIVE MONEY VIA <tg-emoji emoji-id='{E23}'>🏦</tg-emoji>\n"
+            f"RECEIVE MONEY VIA <tg-emoji emoji-id='{E21}'>🏦</tg-emoji>\n"
             f"━━━━━━━━━━━━━\n"
             f"SELECT WHERE YOU WANT TO RECEIVE YOUR FUNDS: <tg-emoji emoji-id='{E7}'>👇</tg-emoji>",
             parse_mode="HTML",
@@ -302,7 +288,7 @@ def callback_query(call):
             f"ADMIN OF REX PRIVATE BOT <tg-emoji emoji-id='{E4}'>👑</tg-emoji>\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
             f"WELCOME TO REX PRIVATE BOT ZONE! <tg-emoji emoji-id='{E5}'>🌟</tg-emoji>\n"
-            f"RATE: 1 USD = {DOLAR_RATE} BDT <tg-emoji emoji-id='{E6}'>💱</tg-emoji>\n\n"
+            f"CURRENT RATE: 1 USD = {DOLAR_RATE} BDT <tg-emoji emoji-id='{E38}'>💱</tg-emoji>\n\n"
             f"PLEASE SELECT AN OPTION: <tg-emoji emoji-id='{E7}'>👇</tg-emoji>"
         )
         bot.send_message(user_id, welcome_text, parse_mode="HTML", reply_markup=main_menu())
@@ -322,8 +308,8 @@ def callback_query(call):
         markup.add(types.InlineKeyboardButton("BACK", callback_data="back_to_main_menu"))
 
         amount_msg = (
-            f"ENTER AMOUNT (USD) <tg-emoji emoji-id='{E24}'>💵</tg-emoji>\n\n"
-            f"CURRENT RATE: 1 USD = {DOLAR_RATE} BDT <tg-emoji emoji-id='{E8}'>📈</tg-emoji>\n\n"
+            f"ENTER AMOUNT (USD) <tg-emoji emoji-id='{E11}'>💵</tg-emoji>\n\n"
+            f"CURRENT RATE: 1 USD = {DOLAR_RATE} BDT <tg-emoji emoji-id='{E38}'>📈</tg-emoji>\n\n"
             f"PLEASE ENTER THE TOTAL DOLLARS YOU WISH TO SELL: <tg-emoji emoji-id='{E7}'>👇</tg-emoji>"
         )
         sent_msg = bot.send_message(user_id, amount_msg, parse_mode="HTML", reply_markup=markup)

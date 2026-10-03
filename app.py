@@ -14,12 +14,12 @@ bot = telebot.TeleBot(TOKEN)
 user_state = {}
 bot_status = {"is_active": True}
 
-# Custom Emoji IDs (28 Premium Emojis)
+# Custom Emoji IDs (38 Premium Emojis)
 E1 = "5397916757333654639"   # 1
 E2 = "5253742260054409879"   # 2
 E3 = "5217822164362739968"   # 3
 E4 = "5424972470023104089"   # 4
-E5 = "54607551261312667"     # 5
+E5 = "5460755126761312667"   # 5
 E6 = "5395695537687123235"   # 6
 E7 = "5267500801240092311"   # 7
 E8 = "5334759662677957452"   # 8
@@ -36,13 +36,23 @@ E18 = "5260293700088511294"  # 18
 E19 = "5229064374403998351"  # 19
 E20 = "5449683594425410231"  # 20
 E21 = "5451882707875276247"  # 21
-E22 = "543613877181941026"    # 22
+E22 = "5436113877181941026"  # 22
 E23 = "5447644880824181073"  # 23
 E24 = "5391032818111363540"  # 24
 E25 = "5406745015365943482"  # 25
 E26 = "5416041192905265756"  # 26
 E27 = "5422439311196834318"  # 27
 E28 = "5395695537687123235"  # 28
+E29 = "5206607081334906820"  # 29
+E30 = "5456140674028019486"  # 30
+E31 = "5240241223632954241"  # 31
+E32 = "5416081784641168838"  # 32
+E33 = "5409048419211682843"  # 33
+E34 = "5397916757333654639"  # 34
+E35 = "5427168083074628963"  # 35
+E36 = "5386367538735104399"  # 36
+E37 = "5244837092042750681"  # 37
+E38 = "5337010556253543833"  # 38
 
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -55,7 +65,7 @@ def main_menu():
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     if not bot_status["is_active"] and message.from_user.id != ADMIN_ID:
-        bot.reply_to(message, f"<tg-emoji emoji-id='{E3}'>🚫</tg-emoji> <b>DUKKHITO! BORTOMANE AMADER SERVICE BONDHO ROYЕCHE.</b>", parse_mode="HTML")
+        bot.reply_to(message, f"<tg-emoji emoji-id='{E33}'>🚫</tg-emoji> <b>DUKKHITO! BORTOMANE AMADER SERVICE BONDHO ROYЕCHE.</b>", parse_mode="HTML")
         return
     
     user_state.pop(message.from_user.id, None)
@@ -77,7 +87,7 @@ def handle_messages(message):
     text = message.text
 
     if not bot_status["is_active"] and user_id != ADMIN_ID:
-        bot.reply_to(message, f"<tg-emoji emoji-id='{E3}'>🚫</tg-emoji> <b>BOT-TI BORTOMANE OFFLINE ROYЕCHE.</b>", parse_mode="HTML")
+        bot.reply_to(message, f"<tg-emoji emoji-id='{E33}'>🚫</tg-emoji> <b>BOT-TI BORTOMANE OFFLINE ROYЕCHE.</b>", parse_mode="HTML")
         return
 
     if "SELL DOLLER" in text:
@@ -108,7 +118,7 @@ def handle_messages(message):
 
     elif "ADMIN PANEL" in text:
         if user_id != ADMIN_ID:
-            bot.send_message(user_id, f"PERMISSION DENIED! <tg-emoji emoji-id='{E3}'>❌</tg-emoji>\n\nUSER ID: {user_id}", parse_mode="HTML", reply_markup=main_menu())
+            bot.send_message(user_id, f"PERMISSION DENIED! <tg-emoji emoji-id='{E34}'>❌</tg-emoji>\n\nUSER ID: {user_id}", parse_mode="HTML", reply_markup=main_menu())
             return
         
         admin_markup = types.InlineKeyboardMarkup(row_width=2)
@@ -161,7 +171,7 @@ def handle_messages(message):
             sent_msg = bot.send_message(user_id, binance_msg, parse_mode="Markdown", reply_markup=markup)
             user_state[user_id]["binance_msg_id"] = sent_msg.message_id
         except ValueError:
-            bot.send_message(user_id, f"PLEASE ENTER A VALID NUMBER! <tg-emoji emoji-id='{E3}'>⚠️</tg-emoji>", parse_mode="HTML")
+            bot.send_message(user_id, f"PLEASE ENTER A VALID NUMBER! <tg-emoji emoji-id='{E35}'>⚠️</tg-emoji>", parse_mode="HTML")
 
     elif user_state.get(user_id, {}).get("step") == "waiting_order_id":
         user_state[user_id]["order_id"] = text
@@ -356,9 +366,9 @@ def callback_query(call):
         bot.send_message(target_user, success_msg, parse_mode="HTML", reply_markup=main_menu())
         
         try:
-            bot.edit_message_caption(caption=call.message.caption + "\n\nSTATUS: APPROVED & PAID <tg-emoji emoji-id='{E25}'>✅</tg-emoji>", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML")
+            bot.edit_message_caption(caption=call.message.caption + f"\n\nSTATUS: APPROVED & PAID <tg-emoji emoji-id='{E25}'>✅</tg-emoji>", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML")
         except Exception:
-            bot.edit_message_text(text=call.message.text + "\n\nSTATUS: APPROVED & PAID <tg-emoji emoji-id='{E25}'>✅</tg-emoji>", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML")
+            bot.edit_message_text(text=call.message.text + f"\n\nSTATUS: APPROVED & PAID <tg-emoji emoji-id='{E25}'>✅</tg-emoji>", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML")
 
     elif data.startswith("rej_"):
         target_user = int(data.split("_")[1])
@@ -368,15 +378,15 @@ def callback_query(call):
             f"━━━━━━━━━━━━━\n"
             f"PAYMENT REJECTED <tg-emoji emoji-id='{E27}'>❌</tg-emoji>\n"
             f"━━━━━━━━━━━━━\n"
-            f"YOUR ORDER WAS REJECTED. PLEASE CONTACT SUPPORT. <tg-emoji emoji-id='{E3}'>⚠️️</tg-emoji>\n"
+            f"YOUR ORDER WAS REJECTED. PLEASE CONTACT SUPPORT. <tg-emoji emoji-id='{E36}'>⚠</tg-emoji>\n"
             f"━━━━━━━━━━━━━"
         )
         bot.send_message(target_user, reject_msg, parse_mode="HTML", reply_markup=main_menu())
         
         try:
-            bot.edit_message_caption(caption=call.message.caption + "\n\nSTATUS: REJECTED <tg-emoji emoji-id='{E27}'>❌</tg-emoji>", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML")
+            bot.edit_message_caption(caption=call.message.caption + f"\n\nSTATUS: REJECTED <tg-emoji emoji-id='{E27}'>❌</tg-emoji>", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML")
         except Exception:
-            bot.edit_message_text(text=call.message.text + "\n\nSTATUS: REJECTED <tg-emoji emoji-id='{E27}'>❌</tg-emoji>", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML")
+            bot.edit_message_text(text=call.message.text + f"\n\nSTATUS: REJECTED <tg-emoji emoji-id='{E27}'>❌</tg-emoji>", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML")
 
     elif data == "admin_toggle":
         bot_status["is_active"] = not bot_status["is_active"]
@@ -388,7 +398,7 @@ def callback_query(call):
 
     elif data == "admin_broadcast":
         user_state[ADMIN_ID] = {"step": "waiting_broadcast"}
-        bot.send_message(ADMIN_ID, f"PLEASE ENTER YOUR BROADCAST MESSAGE: <tg-emoji emoji-id='{E28}'>📢</tg-emoji>", parse_mode="HTML")
+        bot.send_message(ADMIN_ID, f"PLEASE ENTER YOUR BROADCAST MESSAGE: <tg-emoji emoji-id='{E38}'>📢</tg-emoji>", parse_mode="HTML")
 
 if __name__ == "__main__":
     print("Bot is starting on Railway...")

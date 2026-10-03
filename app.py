@@ -1,17 +1,4 @@
 import os
-import json
-import telebot
-from telebot import types
-
-TOKEN = os.environ.get('BOT_TOKEN')
-
-ADMIN_ID = 7388500439          
-BINANCE_ID = "123456789"       
-ADMIN_USERNAME = "SAIM_X9"     
-DOLAR_RATE = 120.0             
-
-bot = telebot.TeleBot(TOKEN)
-import os
 import telebot
 from telebot import types
 
@@ -27,26 +14,26 @@ bot = telebot.TeleBot(TOKEN)
 user_state = {}
 bot_status = {"is_active": True}
 
-# **নোট:** আপনার প্রিমিয়াম ইমোজির আসল ID দিয়ে নিচের '5368324170671752256' নম্বরটি পরিবর্তন করে নেবেন।
-E_HAND = '<a href="tg://emoji?id=5368324170671752256">🤲</a>'
-E_USER = '<a href="tg://emoji?id=5368324170671752256">👤</a>'
-E_CROWN = '<a href="tg://emoji?id=5368324170671752256">👑</a>'
-E_STAR = '<a href="tg://emoji?id=5368324170671752256">🌟</a>'
-E_EXCHANGE = '<a href="tg://emoji?id=5368324170671752256">💱</a>'
-E_POINT = '<a href="tg://emoji?id=5368324170671752256">👇</a>'
-E_WARNING = '<a href="tg://emoji?id=5368324170671752256">⚠️️</a>'
-E_MONEY = '<a href="tg://emoji?id=5368324170671752256">💵</a>'
-E_CHART = '<a href="tg://emoji?id=5368324170671752256">📈</a>'
-E_DIAMOND = '<a href="tg://emoji?id=5368324170671752256">💎</a>'
-E_INBOX = '<a href="tg://emoji?id=5368324170671752256">📥</a>'
-E_CHECK = '<a href="tg://emoji?id=5368324170671752256">✅</a>'
-E_CAMERA = '<a href="tg://emoji?id=5368324170671752256">📸</a>'
-E_BANK = '<a href="tg://emoji?id=5368324170671752256">🏦</a>'
-E_PHONE = '<a href="tg://emoji?id=5368324170671752256">📱</a>'
-E_CLOCK = '<a href="tg://emoji?id=5368324170671752256">⏳</a>'
-E_ALERT = '<a href="tg://emoji?id=5368324170671752256">🚨</a>'
-E_CROSS = '<a href="tg://emoji?id=5368324170671752256">❌</a>'
-E_TOOL = '<a href="tg://emoji?id=5368324170671752256">🛠</a>'
+# **Sothik Premium Emoji IDs (Catalog onujayi update kora holo)**
+E_HAND = '<a href="tg://emoji?id=5337080053119336309">🤲</a>'
+E_USER = '<a href="tg://emoji?id=597770735999717115">👤</a>'
+E_CROWN = '<a href="tg://emoji?id=541565581407923871">👑</a>'
+E_STAR = '<a href="tg://emoji?id=5438496463044752972">🌟</a>'
+E_EXCHANGE = '<a href="tg://emoji?id=577184941154078090">💱</a>'
+E_POINT = '<a href="tg://emoji?id=5449683594425410231">👇</a>'
+E_WARNING = '<a href="tg://emoji?id=5447644880824161073">⚠</a>'
+E_MONEY = '<a href="tg://emoji?id=5409048419211682843">💵</a>'
+E_CHART = '<a href="tg://emoji?id=5231200819986047254">📈</a>'
+E_DIAMOND = '<a href="tg://emoji?id=5204357742537492089">💎</a>'
+E_INBOX = '<a href="tg://emoji?id=5323442290709895472">📥</a>'
+E_CHECK = '<a href="tg://emoji?id=5206607081334906820">✅</a>'
+E_CAMERA = '<a href="tg://emoji?id=584602487033353251">📸</a>'
+E_BANK = '<a href="tg://emoji?id=5967456680940671207">🏦</a>'
+E_PHONE = '<a href="tg://emoji?id=5388632425314140043">📱</a>'
+E_CLOCK = '<a href="tg://emoji?id=5440621591387980068">⏳</a>'
+E_ALERT = '<a href="tg://emoji?id=5879813604082983587">🚨</a>'
+E_CROSS = '<a href="tg://emoji?id=5210952531676504517">❌</a>'
+E_TOOL = '<a href="tg://emoji?id=5341715473882955310">🛠</a>'
 
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
@@ -123,11 +110,6 @@ def handle_messages(message):
         )
         bot.send_message(user_id, f"{E_CROWN} 𝗔𝗗𝗠𝗜𝗡 𝗖𝗢𝗡𝗧𝗥𝗢𝗟 𝗣𝗔𝗡𝗘𝗟", parse_mode="HTML", reply_markup=admin_markup)
 
-    elif user_state.get(user_id, {}).get("step") == "waiting_broadcast":
-        if user_id == ADMIN_ID:
-            user_state.pop(user_id, None)
-            bot.send_message(user_id, f"{E_CHECK} 𝗕𝗥𝗢𝗔𝗗𝗖𝗔𝗦𝗧 𝗦𝗘𝗡𝗧!\n\n{text}", parse_mode="HTML", reply_markup=main_menu())
-
     elif user_state.get(user_id, {}).get("step") == "waiting_amount":
         try:
             amount = float(text)
@@ -149,7 +131,7 @@ def handle_messages(message):
                 pass
 
             markup = types.InlineKeyboardMarkup()
-            markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
+            markup.add(types.InlineKeyboardButton("⬅️️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
 
             binance_msg = (
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -334,7 +316,7 @@ def callback_query(call):
             pass
             
         markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
+        markup.add(types.InlineKeyboardButton("⬅ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
         bot.send_message(user_id, f"{E_PHONE} 𝗣𝗟𝗘𝗔𝗦𝗘 𝗘𝗡𝗧𝗘𝗥 𝗬𝗢𝗨𝗥 𝗕𝗞𝗔𝗦𝗛 𝗡𝗨𝗠𝗕𝗘𝗥:", parse_mode="HTML", reply_markup=markup)
         return
 

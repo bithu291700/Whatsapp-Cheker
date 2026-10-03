@@ -14,32 +14,32 @@ bot = telebot.TeleBot(TOKEN)
 user_state = {}
 bot_status = {"is_active": True}
 
-# Premium Custom Emoji IDs
-E_HAND = '<a href="tg://emoji?id=5269657987219232606">🤲</a>'
-E_CHECK = '<a href="tg://emoji?id=5206607081334906820">✅</a>'
-E_STAR = '<a href="tg://emoji?id=5269215244810491516">🌟</a>'
-E_CHART = '<a href="tg://emoji?id=5231159755803761138">📈</a>'
-E_MONEY = '<a href="tg://emoji?id=5411225014148014586">💵</a>'
-E_CROSS = '<a href="tg://emoji?id=5210952531676504517">❌</a>'
-E_DIAMOND = '<a href="tg://emoji?id=5240241223632954241">💎</a>'
-E_TOOL = '<a href="tg://emoji?id=5341715473882955310">🛠</a>'
-E_WARNING = '<a href="tg://emoji?id=5447644880824161073">⚠</a>'
-E_INBOX = '<a href="tg://emoji?id=5323442290709895472">📥</a>'
-E_CAMERA = '<a href="tg://emoji?id=584602487033353251">📸</a>'
-E_BANK = '<a href="tg://emoji?id=5967456680940671207">🏦</a>'
-E_PHONE = '<a href="tg://emoji?id=5388632425314140043">📱</a>'
-E_CLOCK = '<a href="tg://emoji?id=5440621591387980068">⏳</a>'
-E_ALERT = '<a href="tg://emoji?id=5879813604082983587">🚨</a>'
-E_EXCHANGE = '<a href="tg://emoji?id=577184941154078090">💱</a>'
-E_CROWN = '<a href="tg://emoji?id=541565581407923871">👑</a>'
-E_USER = '<a href="tg://emoji?id=597770735999717115">👤</a>'
-E_POINT = '<a href="tg://emoji?id=5449683594425410231">👇</a>'
+# **নোট:** আপনার প্রিমিয়াম ইমোজির আসল ID দিয়ে নিচের '5368324170671752256' নম্বরটি পরিবর্তন করে নেবেন।
+E_HAND = '<a href="tg://emoji?id=5368324170671752256">🤲</a>'
+E_USER = '<a href="tg://emoji?id=5368324170671752256">👤</a>'
+E_CROWN = '<a href="tg://emoji?id=5368324170671752256">👑</a>'
+E_STAR = '<a href="tg://emoji?id=5368324170671752256">🌟</a>'
+E_EXCHANGE = '<a href="tg://emoji?id=5368324170671752256">💱</a>'
+E_POINT = '<a href="tg://emoji?id=5368324170671752256">👇</a>'
+E_WARNING = '<a href="tg://emoji?id=5368324170671752256">⚠️️</a>'
+E_MONEY = '<a href="tg://emoji?id=5368324170671752256">💵</a>'
+E_CHART = '<a href="tg://emoji?id=5368324170671752256">📈</a>'
+E_DIAMOND = '<a href="tg://emoji?id=5368324170671752256">💎</a>'
+E_INBOX = '<a href="tg://emoji?id=5368324170671752256">📥</a>'
+E_CHECK = '<a href="tg://emoji?id=5368324170671752256">✅</a>'
+E_CAMERA = '<a href="tg://emoji?id=5368324170671752256">📸</a>'
+E_BANK = '<a href="tg://emoji?id=5368324170671752256">🏦</a>'
+E_PHONE = '<a href="tg://emoji?id=5368324170671752256">📱</a>'
+E_CLOCK = '<a href="tg://emoji?id=5368324170671752256">⏳</a>'
+E_ALERT = '<a href="tg://emoji?id=5368324170671752256">🚨</a>'
+E_CROSS = '<a href="tg://emoji?id=5368324170671752256">❌</a>'
+E_TOOL = '<a href="tg://emoji?id=5368324170671752256">🛠</a>'
 
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn_sell = types.KeyboardButton(f"💵 𝗦𝗘𝗟𝗟 𝗗𝗢𝗟𝗟𝗘𝗥")
-    btn_support = types.KeyboardButton(f"🛠 𝗦𝗨𝗣𝗣𝗢𝗥𝗧")
-    btn_admin = types.KeyboardButton(f"👑 𝗔𝗗𝗠𝗜𝗡 𝗣𝗔𝗡𝗘𝗟")
+    btn_sell = types.KeyboardButton("💵 𝗦𝗘𝗟𝗟 𝗗𝗢𝗟𝗟𝗘𝗥")
+    btn_support = types.KeyboardButton("📞 𝗦𝗨𝗣𝗣𝗢𝗥𝗧")
+    btn_admin = types.KeyboardButton("👑 𝗔𝗗𝗠𝗜𝗡 𝗣𝗔𝗡𝗘𝗟")
     markup.add(btn_sell, btn_support, btn_admin)
     return markup
 
@@ -65,14 +65,13 @@ def send_welcome(message):
 @bot.message_handler(func=lambda message: True)
 def handle_messages(message):
     user_id = message.from_user.id
-    text = message.text if message.text else ""
+    text = message.text
 
     if not bot_status["is_active"] and user_id != ADMIN_ID:
         bot.reply_to(message, f"{E_WARNING} 𝗕𝗢𝗧-𝗧𝗜 𝗕𝗢𝗥𝗧𝗢𝗠𝗔𝗡𝗘 𝗢𝗙𝗙𝗟𝗜𝗡𝗘 𝗥𝗢𝗬𝗘𝗖𝗛𝗘.", parse_mode="HTML")
         return
 
-    # এখানে শুধুমাত্র কী-ওয়ার্ড দিয়ে চেক করা হচ্ছে যাতে ইমোজির কারণে সমস্যা না হয়
-    if "SELL DOLLER" in text:
+    if text == "💵 𝗦𝗘𝗟𝗟 𝗗𝗢𝗟𝗟𝗘𝗥":
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("𝗕𝗜𝗡𝗔𝗡𝗖𝗘", callback_data="binance_sell_option"))
         markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
@@ -90,7 +89,7 @@ def handle_messages(message):
         bot.send_message(user_id, "Menu hidden", reply_markup=remove_markup)
         bot.send_message(user_id, msg, parse_mode="HTML", reply_markup=markup)
 
-    elif "SUPPORT" in text:
+    elif text == "📞 𝗦𝗨𝗣𝗣𝗢𝗥𝗧":
         user_state.pop(user_id, None)
         support_msg = (
             f"{E_TOOL} 𝗖𝗨𝗦𝗧𝗢𝗠𝗘𝗥 𝗦𝗨𝗣𝗣𝗢𝗥𝗧 & 𝗛𝗘𝗟𝗣 𝗗𝗘𝗦𝗞\n\n"
@@ -98,7 +97,7 @@ def handle_messages(message):
         )
         bot.send_message(user_id, support_msg, parse_mode="HTML", reply_markup=main_menu())
 
-    elif "ADMIN PANEL" in text:
+    elif text == "👑 𝗔𝗗𝗠𝗜𝗡 𝗣𝗔𝗡𝗘𝗟":
         if user_id != ADMIN_ID:
             bot.send_message(user_id, f"{E_CROSS} 𝗣𝗘𝗥𝗠𝗜𝗦𝗦𝗜𝗢𝗡 𝗗𝗘𝗡𝗜𝗘𝗗!\n\n𝗨𝗦𝗘𝗥 𝗜𝗗: {user_id}", parse_mode="HTML", reply_markup=main_menu())
             return
@@ -106,9 +105,15 @@ def handle_messages(message):
         admin_markup = types.InlineKeyboardMarkup(row_width=2)
         admin_markup.add(
             types.InlineKeyboardButton("📢 𝗕𝗥𝗢𝗔𝗗𝗖𝗔𝗦𝗧", callback_data="admin_broadcast"),
+            types.InlineKeyboardButton("💱 𝗥𝗔𝗧𝗘 𝗖𝗛𝗔𝗡𝗚𝗘", callback_data="admin_rate"),
             types.InlineKeyboardButton("🔄 𝗕𝗢𝗧 𝗢𝗡/𝗢𝗙𝗙", callback_data="admin_toggle")
         )
         bot.send_message(user_id, f"{E_CROWN} 𝗔𝗗𝗠𝗜𝗡 𝗖𝗢𝗡𝗧𝗥𝗢𝗟 𝗣𝗔𝗡𝗘𝗟", parse_mode="HTML", reply_markup=admin_markup)
+
+    elif user_state.get(user_id, {}).get("step") == "waiting_broadcast":
+        if user_id == ADMIN_ID:
+            user_state.pop(user_id, None)
+            bot.send_message(user_id, f"{E_CHECK} 𝗕𝗥𝗢𝗔𝗗𝗖𝗔𝗦𝗧 𝗦𝗘𝗡𝗧!\n\n{text}", parse_mode="HTML", reply_markup=main_menu())
 
     elif user_state.get(user_id, {}).get("step") == "waiting_amount":
         try:
@@ -226,10 +231,6 @@ def handle_messages(message):
         else:
             bot.send_message(ADMIN_ID, admin_notification, parse_mode="HTML", reply_markup=admin_markup)
 
-    elif user_state.get(user_id, {}).get("step") == "waiting_broadcast" and user_id == ADMIN_ID:
-        user_state.pop(ADMIN_ID, None)
-        bot.send_message(ADMIN_ID, f"{E_CHECK} 𝗕𝗥𝗢𝗔𝗗𝗖𝗔𝗦𝗧 𝗦𝗘𝗡𝗧 (Simulation)", parse_mode="HTML", reply_markup=main_menu())
-
 @bot.message_handler(content_types=['photo'])
 def handle_photos(message):
     user_id = message.from_user.id
@@ -299,7 +300,7 @@ def callback_query(call):
         user_state[user_id] = {"step": "waiting_amount"}
         
         markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("⬅️️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
+        markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
 
         amount_msg = (
             f"{E_MONEY} 𝗘𝗡𝗧𝗘𝗥 𝗔𝗠𝗢𝗨𝗡𝗧 (𝗨𝗦𝗗)\n\n"
@@ -372,6 +373,9 @@ def callback_query(call):
         bot_status["is_active"] = not bot_status["is_active"]
         status_text = "𝗔𝗖𝗧𝗜𝗩𝗘" if bot_status["is_active"] else "𝗢𝗙𝗙"
         bot.answer_callback_query(call.id, f"𝗕𝗢𝗧 𝗦𝗧𝗔𝗧𝗨𝗦: {status_text}", show_alert=True)
+
+    elif data == "admin_rate":
+        bot.answer_callback_query(call.id, f"𝗖𝗨𝗥𝗥𝗘𝗡𝗧 𝗥𝗔𝗧𝗘: {DOLAR_RATE} 𝗕𝗗𝗧", show_alert=True)
 
     elif data == "admin_broadcast":
         user_state[ADMIN_ID] = {"step": "waiting_broadcast"}

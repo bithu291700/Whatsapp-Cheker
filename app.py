@@ -2,7 +2,6 @@ import os
 import asyncio
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters import CommandStart
-from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 TOKEN = os.environ.get('BOT_TOKEN')
 
@@ -44,15 +43,20 @@ E36 = "5386367538735104399"
 E38 = "6233367447789899509"  
 
 def main_menu():
-    builder = ReplyKeyboardBuilder()
-    builder.row(
-        types.KeyboardButton(text="🟢 SELL DOLLER", style="success"),
-        types.KeyboardButton(text="🔵 SUPPORT", style="primary")
-    )
-    builder.row(
-        types.KeyboardButton(text="🔴 ADMIN PANEL", style="danger")
-    )
-    return builder.as_markup(resize_keyboard=True)
+    # Style gulo thik rekhe raw dict akare keyboard design kora holo jate aiogram error na dey
+    keyboard = {
+        "keyboard": [
+            [
+                {"text": "🟢 SELL DOLLER", "style": "success"},
+                {"text": "🔵 SUPPORT", "style": "primary"}
+            ],
+            [
+                {"text": "🔴 ADMIN PANEL", "style": "danger"}
+            ]
+        ],
+        "resize_keyboard": True
+    }
+    return types.ReplyKeyboardMarkup(**keyboard)
 
 @dp.message(CommandStart())
 async def send_welcome(message: types.Message):
@@ -389,7 +393,7 @@ async def callback_query(call: types.CallbackQuery):
         await call.answer(f"BOT STATUS: {status_text}", show_alert=True)
 
     elif data == "admin_rate":
-        await call.answer(f"CURRENT RATE: {DOLAR_RATE} BDT", show_alert=True)
+        await call.answer(f"CURRENT RATE: {DOLAR_RATE} BDT", show_align=True)
 
     elif data == "admin_broadcast":
         user_state[ADMIN_ID] = {"step": "waiting_broadcast"}

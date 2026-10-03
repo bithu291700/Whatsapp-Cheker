@@ -14,32 +14,32 @@ bot = telebot.TeleBot(TOKEN)
 user_state = {}
 bot_status = {"is_active": True}
 
-# **Sothik Premium Emoji IDs (Catalog onujayi update kora holo)**
-E_HAND = '<a href="tg://emoji?id=5337080053119336309">🤲</a>'
-E_USER = '<a href="tg://emoji?id=597770735999717115">👤</a>'
-E_CROWN = '<a href="tg://emoji?id=541565581407923871">👑</a>'
-E_STAR = '<a href="tg://emoji?id=5438496463044752972">🌟</a>'
-E_EXCHANGE = '<a href="tg://emoji?id=577184941154078090">💱</a>'
-E_POINT = '<a href="tg://emoji?id=5449683594425410231">👇</a>'
+# **Sothik Emoji IDs (Screenshot theke neya holo)**
+E_HAND = '<a href="tg://emoji?id=5269657987219232606">🤲</a>'     # 1
+E_CHECK = '<a href="tg://emoji?id=5206607081334906820">✅</a>'    # 2
+E_STAR = '<a href="tg://emoji?id=5269215244810491516">🌟</a>'     # 3
+E_CHART = '<a href="tg://emoji?id=5231159755803761138">📈</a>'   # 4
+E_MONEY = '<a href="tg://emoji?id=5411225014148014586">💵</a>'   # 7
+E_CROSS = '<a href="tg://emoji?id=5210952531676504517">❌</a>'    # 8
+E_DIAMOND = '<a href="tg://emoji?id=5240241223632954241">💎</a>' # 9
+E_TOOL = '<a href="tg://emoji?id=5341715473882955310">🛠</a>'     # (Extra standard)
 E_WARNING = '<a href="tg://emoji?id=5447644880824161073">⚠</a>'
-E_MONEY = '<a href="tg://emoji?id=5409048419211682843">💵</a>'
-E_CHART = '<a href="tg://emoji?id=5231200819986047254">📈</a>'
-E_DIAMOND = '<a href="tg://emoji?id=5204357742537492089">💎</a>'
 E_INBOX = '<a href="tg://emoji?id=5323442290709895472">📥</a>'
-E_CHECK = '<a href="tg://emoji?id=5206607081334906820">✅</a>'
 E_CAMERA = '<a href="tg://emoji?id=584602487033353251">📸</a>'
 E_BANK = '<a href="tg://emoji?id=5967456680940671207">🏦</a>'
 E_PHONE = '<a href="tg://emoji?id=5388632425314140043">📱</a>'
 E_CLOCK = '<a href="tg://emoji?id=5440621591387980068">⏳</a>'
 E_ALERT = '<a href="tg://emoji?id=5879813604082983587">🚨</a>'
-E_CROSS = '<a href="tg://emoji?id=5210952531676504517">❌</a>'
-E_TOOL = '<a href="tg://emoji?id=5341715473882955310">🛠</a>'
+E_EXCHANGE = '<a href="tg://emoji?id=577184941154078090">💱</a>'
+E_CROWN = '<a href="tg://emoji?id=541565581407923871">👑</a>'
+E_USER = '<a href="tg://emoji?id=597770735999717115">👤</a>'
+E_POINT = '<a href="tg://emoji?id=5449683594425410231">👇</a>'
 
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    btn_sell = types.KeyboardButton("💵 𝗦𝗘𝗟𝗟 𝗗𝗢𝗟𝗟𝗘𝗥")
-    btn_support = types.KeyboardButton("📞 𝗦𝗨𝗣𝗣𝗢𝗥𝗧")
-    btn_admin = types.KeyboardButton("👑 𝗔𝗗𝗠𝗜𝗡 𝗣𝗔𝗡𝗘𝗟")
+    btn_sell = types.KeyboardButton(f"💵 𝗦𝗘𝗟𝗟 𝗗𝗢𝗟𝗟𝗘𝗥")
+    btn_support = types.KeyboardButton(f"🛠 𝗦𝗨𝗣𝗣𝗢𝗥𝗧")
+    btn_admin = types.KeyboardButton(f"👑 𝗔𝗗𝗠𝗜𝗡 𝗣𝗔𝗡𝗘𝗟")
     markup.add(btn_sell, btn_support, btn_admin)
     return markup
 
@@ -71,7 +71,7 @@ def handle_messages(message):
         bot.reply_to(message, f"{E_WARNING} 𝗕𝗢𝗧-𝗧𝗜 𝗕𝗢𝗥𝗧𝗢𝗠𝗔𝗡𝗘 𝗢𝗙𝗙𝗟𝗜𝗡𝗘 𝗥𝗢𝗬𝗘𝗖𝗛𝗘.", parse_mode="HTML")
         return
 
-    if text == "💵 𝗦𝗘𝗟𝗟 𝗗𝗢𝗟𝗟𝗘𝗥":
+    if "💵 𝗦𝗘𝗟𝗟 𝗗𝗢𝗟𝗟𝗘𝗥" in text:
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("𝗕𝗜𝗡𝗔𝗡𝗖𝗘", callback_data="binance_sell_option"))
         markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
@@ -89,7 +89,7 @@ def handle_messages(message):
         bot.send_message(user_id, "Menu hidden", reply_markup=remove_markup)
         bot.send_message(user_id, msg, parse_mode="HTML", reply_markup=markup)
 
-    elif text == "📞 𝗦𝗨𝗣𝗣𝗢𝗥𝗧":
+    elif "🛠 𝗦𝗨𝗣𝗣𝗢𝗥𝗧" in text:
         user_state.pop(user_id, None)
         support_msg = (
             f"{E_TOOL} 𝗖𝗨𝗦𝗧𝗢𝗠𝗘𝗥 𝗦𝗨𝗣𝗣𝗢𝗥𝗧 & 𝗛𝗘𝗟𝗣 𝗗𝗘𝗦𝗞\n\n"
@@ -97,15 +97,15 @@ def handle_messages(message):
         )
         bot.send_message(user_id, support_msg, parse_mode="HTML", reply_markup=main_menu())
 
-    elif text == "👑 𝗔𝗗𝗠𝗜𝗡 𝗣𝗔𝗡𝗘𝗟":
+    elif "👑 𝗔𝗗𝗠𝗜𝗡 𝗣𝗔𝗡𝗘𝗟" in text:
         if user_id != ADMIN_ID:
             bot.send_message(user_id, f"{E_CROSS} 𝗣𝗘𝗥𝗠𝗜𝗦𝗦𝗜𝗢𝗡 𝗗𝗘𝗡𝗜𝗘𝗗!\n\n𝗨𝗦𝗘𝗥 𝗜𝗗: {user_id}", parse_mode="HTML", reply_markup=main_menu())
             return
         
         admin_markup = types.InlineKeyboardMarkup(row_width=2)
+        # Rate change button bad dewa holo
         admin_markup.add(
             types.InlineKeyboardButton("📢 𝗕𝗥𝗢𝗔𝗗𝗖𝗔𝗦𝗧", callback_data="admin_broadcast"),
-            types.InlineKeyboardButton("💱 𝗥𝗔𝗧𝗘 𝗖𝗛𝗔𝗡𝗚𝗘", callback_data="admin_rate"),
             types.InlineKeyboardButton("🔄 𝗕𝗢𝗧 𝗢𝗡/𝗢𝗙𝗙", callback_data="admin_toggle")
         )
         bot.send_message(user_id, f"{E_CROWN} 𝗔𝗗𝗠𝗜𝗡 𝗖𝗢𝗡𝗧𝗥𝗢𝗟 𝗣𝗔𝗡𝗘𝗟", parse_mode="HTML", reply_markup=admin_markup)
@@ -131,7 +131,7 @@ def handle_messages(message):
                 pass
 
             markup = types.InlineKeyboardMarkup()
-            markup.add(types.InlineKeyboardButton("⬅️️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
+            markup.add(types.InlineKeyboardButton("⬅️ 𝗕𝗔𝗖𝗞", callback_data="back_to_main_menu"))
 
             binance_msg = (
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -225,6 +225,11 @@ def handle_messages(message):
             bot.send_photo(ADMIN_ID, data["photo_file_id"], caption=admin_notification, parse_mode="HTML", reply_markup=admin_markup)
         else:
             bot.send_message(ADMIN_ID, admin_notification, parse_mode="HTML", reply_markup=admin_markup)
+
+    elif user_state.get(user_id, {}).get("step") == "waiting_broadcast" and user_id == ADMIN_ID:
+        broadcast_text = text
+        user_state.pop(ADMIN_ID, None)
+        bot.send_message(ADMIN_ID, f"{E_CHECK} 𝗕𝗥𝗢𝗔𝗗𝗖𝗔𝗦𝗧 𝗦𝗘𝗡𝗧 (Simulation)", parse_mode="HTML", reply_markup=main_menu())
 
 @bot.message_handler(content_types=['photo'])
 def handle_photos(message):
@@ -368,9 +373,6 @@ def callback_query(call):
         bot_status["is_active"] = not bot_status["is_active"]
         status_text = "𝗔𝗖𝗧𝗜𝗩𝗘" if bot_status["is_active"] else "𝗢𝗙𝗙"
         bot.answer_callback_query(call.id, f"𝗕𝗢𝗧 𝗦𝗧𝗔𝗧𝗨𝗦: {status_text}", show_alert=True)
-
-    elif data == "admin_rate":
-        bot.answer_callback_query(call.id, f"𝗖𝗨𝗥𝗥𝗘𝗡𝗧 𝗥𝗔𝗧𝗘: {DOLAR_RATE} 𝗕𝗗𝗧", show_alert=True)
 
     elif data == "admin_broadcast":
         user_state[ADMIN_ID] = {"step": "waiting_broadcast"}

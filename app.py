@@ -14,7 +14,7 @@ bot = telebot.TeleBot(TOKEN)
 user_state = {}
 bot_status = {"is_active": True}
 
-# Custom Emoji IDs
+# Custom Emoji IDs (Updated as requested)
 E1 = "5397916757333654639"   
 E2 = "5253742260054409879"   
 E4 = "5424972470023104089"   
@@ -30,7 +30,9 @@ E18 = "5447410659077661506"
 E19 = "5274099962655816924"  
 E20 = "5440660757194744323"  
 E21 = "5348469219761626211"  
+E24 = "5409048419211682843"  
 E25 = "5979054952360711289"  
+E26 = "5449683594425410231"  
 E27 = "5210952531676504517"  
 E33 = "5395695537687123235"  
 E34 = "5206607081334906820"  
@@ -40,24 +42,9 @@ E38 = "6233367447789899509"
 
 def main_menu():
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    
-    # Colored Reply Buttons using Bot API 9.4 styles (success = green, primary = blue, danger = red)
-    btn_sell = types.KeyboardButton(
-        "SELL DOLLER", 
-        style="success", 
-        icon_custom_emoji_id=E11
-    )
-    btn_support = types.KeyboardButton(
-        "SUPPORT", 
-        style="primary", 
-        icon_custom_emoji_id=E9
-    )
-    btn_admin = types.KeyboardButton(
-        "ADMIN PANEL", 
-        style="danger", 
-        icon_custom_emoji_id=E10
-    )
-    
+    btn_sell = types.KeyboardButton(f"SELL DOLLER")
+    btn_support = types.KeyboardButton(f"SUPPORT")
+    btn_admin = types.KeyboardButton(f"ADMIN PANEL")
     markup.add(btn_sell, btn_support, btn_admin)
     return markup
 
@@ -89,16 +76,51 @@ def handle_messages(message):
         bot.reply_to(message, f"<tg-emoji emoji-id='{E33}'>🚫</tg-emoji> <b>BOT-TI BORTOMANE OFFLINE ROYЕCHE.</b>", parse_mode="HTML")
         return
 
-    # Check state first before button matching
-    current_step = user_state.get(user_id, {}).get("step")
+    if "SELL DOLLER" in text:
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton("BINANCE", callback_data="binance_sell_option"))
+        markup.add(types.InlineKeyboardButton("BACK", callback_data="back_to_main_menu"))
+        
+        msg = (
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"ASSALAMU ALAIKUM <tg-emoji emoji-id='{E1}'>✅</tg-emoji>\n"
+            f"I'M SAIM <tg-emoji emoji-id='{E2}'>👤</tg-emoji>\n"
+            f"ADMIN OF REX PRIVATE BOT <tg-emoji emoji-id='{E4}'>👑</tg-emoji>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"CURRENT RATE: {DOLAR_RATE} BDT / USD <tg-emoji emoji-id='{E24}'>📈</tg-emoji>\n\n"
+            f"CLICK THE BUTTON BELOW: <tg-emoji emoji-id='{E7}'>👇</tg-emoji>"
+        )
+        remove_markup = types.ReplyKeyboardRemove()
+        bot.send_message(user_id, "Menu hidden", reply_markup=remove_markup)
+        bot.send_message(user_id, msg, parse_mode="HTML", reply_markup=markup)
 
-    if current_step == "waiting_broadcast":
+    elif "SUPPORT" in text:
+        user_state.pop(user_id, None)
+        support_msg = (
+            f"CUSTOMER SUPPORT & HELP DESK <tg-emoji emoji-id='{E9}'>📞</tg-emoji>\n\n"
+            f"ADMIN USERNAME: @{ADMIN_USERNAME}"
+        )
+        bot.send_message(user_id, support_msg, parse_mode="HTML", reply_markup=main_menu())
+
+    elif "ADMIN PANEL" in text:
+        if user_id != ADMIN_ID:
+            bot.send_message(user_id, f"PERMISSION DENIED! <tg-emoji emoji-id='{E34}'>❌</tg-emoji>\n\nUSER ID: {user_id}", parse_mode="HTML", reply_markup=main_menu())
+            return
+        
+        admin_markup = types.InlineKeyboardMarkup(row_width=2)
+        admin_markup.add(
+            types.InlineKeyboardButton("BROADCAST", callback_data="admin_broadcast"),
+            types.InlineKeyboardButton("RATE CHANGE", callback_data="admin_rate"),
+            types.InlineKeyboardButton("BOT ON/OFF", callback_data="admin_toggle")
+        )
+        bot.send_message(user_id, f"ADMIN CONTROL PANEL <tg-emoji emoji-id='{E10}'>👑</tg-emoji>", parse_mode="HTML", reply_markup=admin_markup)
+
+    elif user_state.get(user_id, {}).get("step") == "waiting_broadcast":
         if user_id == ADMIN_ID:
             user_state.pop(user_id, None)
             bot.send_message(user_id, f"BROADCAST SENT! <tg-emoji emoji-id='{E14}'>✅</tg-emoji>\n\n{text}", parse_mode="HTML", reply_markup=main_menu())
-            return
 
-    elif current_step == "waiting_amount":
+    elif user_state.get(user_id, {}).get("step") == "waiting_amount":
         try:
             amount = float(text)
             total_taka = amount * DOLAR_RATE
@@ -136,9 +158,8 @@ def handle_messages(message):
             user_state[user_id]["binance_msg_id"] = sent_msg.message_id
         except ValueError:
             bot.send_message(user_id, f"PLEASE ENTER A VALID NUMBER! <tg-emoji emoji-id='{E35}'>⚠️</tg-emoji>", parse_mode="HTML")
-        return
 
-    elif current_step == "waiting_order_id":
+    elif user_state.get(user_id, {}).get("step") == "waiting_order_id":
         user_state[user_id]["order_id"] = text
         user_state[user_id]["step"] = "waiting_screenshot"
         
@@ -171,9 +192,8 @@ def handle_messages(message):
             reply_markup=markup
         )
         user_state[user_id]["tx_received_msg_id"] = sent_msg.message_id
-        return
 
-    elif current_step == "waiting_bkash":
+    elif user_state.get(user_id, {}).get("step") == "waiting_bkash":
         user_state[user_id]["bkash_number"] = text
         data = user_state[user_id]
         user_state[user_id]["step"] = "completed"
@@ -215,47 +235,6 @@ def handle_messages(message):
             bot.send_photo(ADMIN_ID, data["photo_file_id"], caption=admin_notification, parse_mode="HTML", reply_markup=admin_markup)
         else:
             bot.send_message(ADMIN_ID, admin_notification, parse_mode="HTML", reply_markup=admin_markup)
-        return
-
-    # Normal Reply Button Handlers
-    if text == "SELL DOLLER":
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("BINANCE", callback_data="binance_sell_option"))
-        markup.add(types.InlineKeyboardButton("BACK", callback_data="back_to_main_menu"))
-        
-        msg = (
-            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"ASSALAMU ALAIKUM <tg-emoji emoji-id='{E1}'>✅</tg-emoji>\n"
-            f"I'M SAIM <tg-emoji emoji-id='{E2}'>👤</tg-emoji>\n"
-            f"ADMIN OF REX PRIVATE BOT <tg-emoji emoji-id='{E4}'>👑</tg-emoji>\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"CURRENT RATE: {DOLAR_RATE} BDT / USD <tg-emoji emoji-id='{E38}'>📈</tg-emoji>\n\n"
-            f"CLICK THE BUTTON BELOW: <tg-emoji emoji-id='{E7}'>👇</tg-emoji>"
-        )
-        remove_markup = types.ReplyKeyboardRemove()
-        bot.send_message(user_id, "Menu hidden", reply_markup=remove_markup)
-        bot.send_message(user_id, msg, parse_mode="HTML", reply_markup=markup)
-
-    elif text == "SUPPORT":
-        user_state.pop(user_id, None)
-        support_msg = (
-            f"CUSTOMER SUPPORT & HELP DESK <tg-emoji emoji-id='{E9}'>📞</tg-emoji>\n\n"
-            f"ADMIN USERNAME: @{ADMIN_USERNAME}"
-        )
-        bot.send_message(user_id, support_msg, parse_mode="HTML", reply_markup=main_menu())
-
-    elif text == "ADMIN PANEL":
-        if user_id != ADMIN_ID:
-            bot.send_message(user_id, f"PERMISSION DENIED! <tg-emoji emoji-id='{E34}'>❌</tg-emoji>\n\nUSER ID: {user_id}", parse_mode="HTML", reply_markup=main_menu())
-            return
-        
-        admin_markup = types.InlineKeyboardMarkup(row_width=2)
-        admin_markup.add(
-            types.InlineKeyboardButton("BROADCAST", callback_data="admin_broadcast"),
-            types.InlineKeyboardButton("RATE CHANGE", callback_data="admin_rate"),
-            types.InlineKeyboardButton("BOT ON/OFF", callback_data="admin_toggle")
-        )
-        bot.send_message(user_id, f"ADMIN CONTROL PANEL <tg-emoji emoji-id='{E10}'>👑</tg-emoji>", parse_mode="HTML", reply_markup=admin_markup)
 
 @bot.message_handler(content_types=['photo'])
 def handle_photos(message):
@@ -393,10 +372,7 @@ def callback_query(call):
         try:
             bot.edit_message_caption(caption=call.message.caption + f"\n\nSTATUS: REJECTED <tg-emoji emoji-id='{E27}'>❌</tg-emoji>", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML")
         except Exception:
-            try:
-                bot.edit_message_text(text=call.message.text + f"\n\nSTATUS: REJECTED <tg-emoji emoji-id='{E27}'>❌</tg-emoji>", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML")
-            except Exception:
-                pass
+            bot.edit_message_text(text=call.message.text + f"\n\nSTATUS: REJECTED <tg-emoji emoji-id='{E27}'>❌</tg-emoji>", chat_id=call.message.chat.id, message_id=call.message.message_id, parse_mode="HTML")
 
     elif data == "admin_toggle":
         bot_status["is_active"] = not bot_status["is_active"]

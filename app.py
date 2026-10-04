@@ -7,7 +7,7 @@ TOKEN = os.environ.get('BOT_TOKEN')
 ADMIN_ID = 7388500439          
 BINANCE_ID = "907194603"       
 ADMIN_USERNAME = "SAIM_X9"     
-DOLAR_RATE = 118.0             
+DOLAR_RATE = 119.0             
 
 bot = telebot.TeleBot(TOKEN)
 
